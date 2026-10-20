@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="styles.css"></helmet>
+<div style="display:flex;flex-direction:column;height:100%;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow:hidden">
+  <header style="display:flex;align-items:center;gap:8px;padding:12px 8px 4px 20px">
+    <div style="flex:1;font-family:var(--font-heading);font-weight:600;font-size:30px;line-height:1.1">Trends</div>
+    <button aria-label="Export" style="width:48px;height:48px;display:grid;place-items:center;background:transparent;border:0;color:inherit;cursor:pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg></button>
+  </header>
+  <div style="flex:1;overflow:auto;padding:8px 20px 32px;display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;border:1px solid var(--color-divider)">
+        <button onClick="{{ setWeek }}" style="min-height:40px;padding:0 16px;border:0;font:inherit;font-size:13px;cursor:pointer;background:{{ weekBg }};color:{{ weekFg }}">Week</button>
+        <button onClick="{{ setMonth }}" style="min-height:40px;padding:0 16px;border:0;border-left:1px solid var(--color-divider);font:inherit;font-size:13px;cursor:pointer;background:{{ monthBg }};color:{{ monthFg }}">Month</button>
+      </div>
+      <div style="flex:1"></div>
+      <button aria-label="Previous" style="width:40px;height:40px;display:grid;place-items:center;background:transparent;border:1px solid var(--color-divider);color:inherit;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+      <span style="font-family:var(--font-heading);font-weight:600;font-size:16px;min-width:108px;text-align:center">{{ period }}</span>
+      <button aria-label="Next" disabled style="width:40px;height:40px;display:grid;place-items:center;background:transparent;border:1px solid var(--color-divider);color:inherit;opacity:.4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+    </div>
+
+    <section class="blueprint" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <span style="flex:1;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Blood pressure</span>
+        <span style="font-family:var(--font-heading);font-weight:600;font-size:28px;font-variant-numeric:tabular-nums">{{ bpAvg }}</span><span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">avg mmHg</span>
+      </div>
+      <div style="display:grid;grid-template-columns:28px minmax(0,1fr);gap:6px">
+        <div style="position:relative;height:160px;font-size:10px;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--color-text) 55%,transparent)">
+          <span style="position:absolute;top:-6px">150</span><span style="position:absolute;top:28%;transform:translateY(-50%)">125</span><span style="position:absolute;top:55%;transform:translateY(-50%)">100</span><span style="position:absolute;top:83%;transform:translateY(-50%)">75</span>
+        </div>
+        <div style="position:relative;height:160px;border-left:1px solid var(--color-divider);border-bottom:1px solid var(--color-divider)">
+          <div style="position:absolute;left:0;right:0;top:22.2%;border-top:1px dashed var(--st-stage1)"></div>
+          <div style="position:absolute;left:0;right:0;top:77.8%;border-top:1px dashed var(--st-stage1)"></div>
+          <div style="position:absolute;inset:0 2px;display:flex;gap:{{ barGap }}">
+            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+              <div style="position:relative;flex:1;min-width:0">
+                <div style="position:absolute;left:0;right:0;top:{{ b.top }};bottom:{{ b.bottom }};background:{{ b.color }}"></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">
+          <sc-for list="{{ xLabels }}" as="x" hint-placeholder-count="7"><span>{{ x }}</span></sc-for>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:color-mix(in srgb,var(--color-text) 65%,transparent)">
+        <span>Bar = diastolic → systolic</span><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:14px;border-top:1px dashed var(--st-stage1)"></i>130 / 80 thresholds</span>
+      </div>
+    </section>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(156px,1fr));gap:20px">
+      <section class="blueprint" style="padding:14px;display:flex;flex-direction:column;gap:8px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="flex:1;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Heart rate</span><span style="font-family:var(--font-heading);font-weight:600;font-size:22px">{{ hrAvg }}</span><span style="font-size:11px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">bpm</span></div>
+        <div style="position:relative;height:80px;border-bottom:1px solid var(--color-divider)">
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible"><polyline points="{{ hrPts }}" fill="none" stroke="var(--color-accent)" stroke-width="1.75" vector-effect="non-scaling-stroke" stroke-linejoin="round"></polyline></svg>
+        </div>
+        <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 62%,transparent)">Resting range {{ hrRange }}</div>
+      </section>
+      <section class="blueprint" style="padding:14px;display:flex;flex-direction:column;gap:8px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="flex:1;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">SpO₂</span><span style="font-family:var(--font-heading);font-weight:600;font-size:22px">{{ spAvg }}</span><span style="font-size:11px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">%</span></div>
+        <div style="position:relative;height:80px;border-bottom:1px solid var(--color-divider)">
+          <div style="position:absolute;left:0;right:0;top:50%;border-top:1px dashed var(--st-stage1)"></div>
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible"><polyline points="{{ spPts }}" fill="none" stroke="var(--color-accent)" stroke-width="1.75" vector-effect="non-scaling-stroke" stroke-linejoin="round"></polyline></svg>
+        </div>
+        <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 62%,transparent)">Dashed = 95% threshold</div>
+      </section>
+    </div>
+
+    <section style="display:flex;flex-direction:column;gap:10px">
+      <h4 style="margin:0;font-size:20px">BP categories</h4>
+      <div style="display:flex;height:14px;gap:2px">
+        <sc-for list="{{ dist }}" as="c" hint-placeholder-count="3"><div style="flex:{{ c.n }};background:{{ c.dot }}"></div></sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 16px">
+        <sc-for list="{{ dist }}" as="c" hint-placeholder-count="3">
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px"><i style="width:8px;height:8px;background:{{ c.dot }}"></i>{{ c.label }} <b style="font-variant-numeric:tabular-nums">{{ c.n }}</b></span>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:6px">
+      <h4 style="margin:0;font-size:20px">Summary</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums">
+        <thead><tr>
+          <th style="text-align:left;font-size:11px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 60%,transparent);padding:8px 0;border-bottom:1px solid var(--color-divider)">Metric</th>
+          <th style="text-align:right;font-size:11px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 60%,transparent);padding:8px 0;border-bottom:1px solid var(--color-divider)">Avg</th>
+          <th style="text-align:right;font-size:11px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 60%,transparent);padding:8px 0;border-bottom:1px solid var(--color-divider)">Min</th>
+          <th style="text-align:right;font-size:11px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 60%,transparent);padding:8px 0;border-bottom:1px solid var(--color-divider)">Max</th>
+        </tr></thead>
+        <tbody>
+          <sc-for list="{{ summary }}" as="r" hint-placeholder-count="4">
+            <tr>
+              <td style="padding:9px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)">{{ r.name }}</td>
+              <td style="padding:9px 0;text-align:right;font-weight:500;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)">{{ r.avg }}</td>
+              <td style="padding:9px 0;text-align:right;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)">{{ r.min }}</td>
+              <td style="padding:9px 0;text-align:right;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)">{{ r.max }}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:412,&quot;height&quot;:820},&quot;range&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;week&quot;,&quot;month&quot;],&quot;default&quot;:&quot;week&quot;,&quot;tsType&quot;:&quot;'week'|'month'&quot;}}">
+const WEEK = { sys:[130,124,127,121,134,119,127], dia:[82,78,79,76,84,74,80], hr:[74,69,71,66,75,66,71], sp:[97,96,98,97,96,98,97] };
+const M23 = { sys:[132,128,135,130,126,138,129,131,127,133,136,129,125,130,134,128,131,127,124,129,133,128,131], dia:[84,81,86,83,79,88,82,83,80,85,87,82,78,83,86,81,84,80,77,82,85,81,83], hr:[72,75,70,78,73,71,76,74,69,77,72,70,75,73,71,74,76,68,72,75,73,70,74], sp:[96,97,95,96,97,94,96,97,96,95,96,97,96,95,97,96,96,97,95,96,97,96,96] };
+const MONTH = { sys:M23.sys.concat(WEEK.sys), dia:M23.dia.concat(WEEK.dia), hr:M23.hr.concat(WEEK.hr), sp:M23.sp.concat(WEEK.sp) };
+const avg = a => Math.round(a.reduce((s, v) => s + v, 0) / a.length);
+const pts = (a, lo, hi) => a.map((v, i) => `${(i / (a.length - 1) * 100).toFixed(1)},${(40 - (v - lo) / (hi - lo) * 40).toFixed(1)}`).join(' ');
+const bpCat = (s, d) => s > 180 || d > 120 ? 'crisis' : s >= 140 || d >= 90 ? 'stage2' : s >= 130 || d >= 80 ? 'stage1' : s >= 120 ? 'elevated' : 'normal';
+const LABEL = { normal:'Normal', elevated:'Elevated', stage1:'Stage 1', stage2:'Stage 2', crisis:'Crisis' };
+
+class Component extends DCLogic {
+  state = { range: this.props.range === 'month' ? 'month' : 'week' };
+  componentDidUpdate(p) { if (p.range !== this.props.range && this.props.range) this.setState({ range: this.props.range }); }
+  renderVals() {
+    const wk = this.state.range === 'week';
+    const d = wk ? WEEK : MONTH;
+    const on = 'var(--color-accent)', off = 'transparent';
+    const lo = 60, hi = 150, pct = v => `${((v - lo) / (hi - lo) * 100).toFixed(1)}%`;
+    const counts = {};
+    d.sys.forEach((s, i) => { const c = bpCat(s, d.dia[i]); counts[c] = (counts[c] || 0) + 1; });
+    const range = a => [Math.min(...a), Math.max(...a)];
+    return {
+      setWeek: () => this.setState({ range: 'week' }), setMonth: () => this.setState({ range: 'month' }),
+      weekBg: wk ? on : off, weekFg: wk ? 'var(--color-bg)' : 'var(--color-text)',
+      monthBg: wk ? off : on, monthFg: wk ? 'var(--color-text)' : 'var(--color-bg)',
+      period: wk ? '14 – 20 Oct' : '21 Sep – 20 Oct',
+      bpAvg: `${avg(d.sys)}/${avg(d.dia)}`,
+      barGap: wk ? '14px' : '3px',
+      bars: d.sys.map((s, i) => ({ top: `${(100 - (s - lo) / (hi - lo) * 100).toFixed(1)}%`, bottom: pct(d.dia[i]), color: `var(--st-${bpCat(s, d.dia[i])})` })),
+      xLabels: wk ? ['W', 'T', 'F', 'S', 'S', 'M', 'T'] : ['21 Sep', '28', '5 Oct', '12', '20'],
+      hrAvg: avg(d.hr), hrPts: pts(d.hr, 55, 85), hrRange: `${Math.min(...d.hr)}–${Math.max(...d.hr)} bpm`,
+      spAvg: avg(d.sp), spPts: pts(d.sp, 90, 100),
+      dist: ['normal', 'elevated', 'stage1', 'stage2', 'crisis'].filter(c => counts[c]).map(c => ({ label: LABEL[c], n: counts[c], dot: `var(--st-${c})` })),
+      summary: [
+        { name: 'Systolic', avg: avg(d.sys), min: range(d.sys)[0], max: range(d.sys)[1] },
+        { name: 'Diastolic', avg: avg(d.dia), min: range(d.dia)[0], max: range(d.dia)[1] },
+        { name: 'Pulse', avg: avg(d.hr), min: range(d.hr)[0], max: range(d.hr)[1] },
+        { name: 'SpO₂ %', avg: avg(d.sp), min: range(d.sp)[0], max: range(d.sp)[1] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

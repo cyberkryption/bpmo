@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="styles.css">
+<style>body{margin:0;background:#e2e2e4} a{color:#416180} a:hover{color:#2c455d}</style>
+</helmet>
+<div ref="{{ rootRef }}" data-theme-root="light" style="--st-normal:oklch(0.64 0.13 150);--st-normal-ink:oklch(0.40 0.09 150);--st-elevated:oklch(0.64 0.13 95);--st-elevated-ink:oklch(0.40 0.09 95);--st-stage1:oklch(0.64 0.13 60);--st-stage1-ink:oklch(0.40 0.09 60);--st-stage2:oklch(0.64 0.13 30);--st-stage2-ink:oklch(0.40 0.09 30);--st-crisis:oklch(0.52 0.17 20);--st-crisis-ink:oklch(0.36 0.12 20);display:flex;flex-direction:column;gap:96px;padding:72px;background:#e2e2e4;color:var(--color-text);font-family:var(--font-body);min-width:max-content">
+
+  <section style="display:flex;flex-direction:column;gap:16px;max-width:880px">
+    <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700)">Android · Kotlin + Jetpack Compose · Material 3 adaptive</div>
+    <h1 style="margin:0;font-size:64px">Vitals — blood pressure, pulse &amp; SpO₂</h1>
+    <p style="margin:0;font-size:18px;line-height:1.5;max-width:720px;text-wrap:pretty">Photograph a monitor or oximeter display, or import past photos. Values are extracted on-device, dated from EXIF, and always confirmed on the review screen before saving. Averages and charts cover 7 and 30 days.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px">
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="5">
+        <span style="display:inline-flex;align-items:center;gap:8px"><i style="width:10px;height:10px;background:{{ l.dot }}"></i>{{ l.label }} <span style="color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ l.rule }}</span></span>
+      </sc-for>
+    </div>
+  </section>
+
+  <section data-screen-label="Compact light" style="display:flex;flex-direction:column;gap:40px">
+    <div style="display:flex;align-items:baseline;gap:16px"><h2 style="margin:0;font-size:40px">Compact · Light</h2><span style="font-family:ui-monospace,monospace;font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">WindowWidthSizeClass.COMPACT · &lt;600dp · NavigationBar</span></div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <div data-screen-label="01 Dashboard" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">01</span><b style="font-family:var(--font-heading);font-size:20px">Dashboard</b><code style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">DashboardScreen</code></div>
+        <div style="width:412px;height:892px;border:10px solid #1b1d1f;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="DashboardScreen" range="{{ range }}" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <dc-import name="NavBar" active="home" hint-size="100%,80px"></dc-import>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+      <div data-screen-label="02 History" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">02</span><b style="font-family:var(--font-heading);font-size:20px">History</b><code style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">HistoryScreen</code></div>
+        <div style="width:412px;height:892px;border:10px solid #1b1d1f;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="HistoryScreen" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <dc-import name="NavBar" active="history" hint-size="100%,80px"></dc-import>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+      <div data-screen-label="03 Trends" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">03</span><b style="font-family:var(--font-heading);font-size:20px">Trends</b><code style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">TrendsScreen</code></div>
+        <div style="width:412px;height:892px;border:10px solid #1b1d1f;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="TrendsScreen" range="{{ range }}" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <dc-import name="NavBar" active="trends" hint-size="100%,80px"></dc-import>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+      <div data-screen-label="04 Reading detail" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">04</span><b style="font-family:var(--font-heading);font-size:20px">Reading detail</b><code style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">ReadingDetailScreen</code></div>
+        <div style="width:412px;height:892px;border:10px solid #1b1d1f;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="ReadingDetailScreen" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:baseline;gap:16px;margin-top:16px"><h3 style="margin:0;font-size:28px">Add a reading</h3><span style="font-size:14px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">Scan → Review → Save · or Import (multi-select) → Review each → Save</span></div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <div data-screen-label="05 Capture" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">05</span><b style="font-family:var(--font-heading);font-size:20px">Capture</b><code style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">CaptureScreen</code></div>
+        <div style="width:412px;height:892px;border:10px solid #1b1d1f;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:#0e1012;color:#eef0f2;box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="CaptureScreen" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:rgba(238,240,242,.5)"></i></div>
+        </div>
+      </div>
+      <div data-screen-label="06 Import" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">06</span><b style="font-family:var(--font-heading);font-size:20px">Import photos</b><code style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">ImportScreen</code></div>
+        <div style="width:412px;height:892px;border:10px solid #1b1d1f;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="ImportScreen" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+      <div data-screen-label="07 Review" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">07</span><b style="font-family:var(--font-heading);font-size:20px">Review &amp; confirm</b><code style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">ReviewScreen</code></div>
+        <div style="width:412px;height:892px;border:10px solid #1b1d1f;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="ReviewScreen" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Biometric lock" style="display:flex;flex-direction:column;gap:40px">
+    <div style="display:flex;align-items:baseline;gap:16px"><h2 style="margin:0;font-size:40px">Biometric lock</h2><span style="font-family:ui-monospace,monospace;font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">androidx.biometric BiometricPrompt · BIOMETRIC_STRONG | DEVICE_CREDENTIAL · shown on cold start and after re-lock timeout</span></div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <div data-screen-label="L1 Lock idle" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">L1</span><b style="font-family:var(--font-heading);font-size:20px">Locked</b><code style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">LockScreen</code></div>
+        <div style="width:412px;height:892px;border:10px solid #1b1d1f;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="LockScreen" status="idle" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+      <div data-screen-label="L2 Lock failed" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">L2</span><b style="font-family:var(--font-heading);font-size:20px">Failed attempt</b></div>
+        <div style="width:412px;height:892px;border:10px solid #1b1d1f;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="LockScreen" status="failed" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+      <div style="width:380px;display:flex;flex-direction:column;gap:12px;padding-top:36px">
+        <div class="blueprint" style="padding:20px;display:flex;flex-direction:column;gap:10px">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Behaviour</div>
+          <pre style="margin:0;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap">Cold start / re-lock → BiometricPrompt
+auto-launches; LockScreen sits behind it.
+Tap the sensor to retry.
+Cancel → stays locked.
+3 failures or "Use PIN" → device credential.
+Lock on background after timeout
+(immediately · 1 min · 5 min).
+FLAG_SECURE on all screens while locked
+and in recents.
+Not enrolled → skip lock, offer Settings.
+Setting: Settings → Security → "Require
+biometric to open" (default off, prompted
+once after first saved reading).</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Compact dark" data-theme-root="dark" style="--color-bg:#121416;--color-surface:#1b1e21;--color-text:#e4e6e8;--color-accent:#8fb3d8;--color-accent-100:#1d2d3d;--color-accent-600:#b5d9fd;--color-accent-700:#a9cdf1;--color-accent-800:#d6ebff;--color-divider:color-mix(in srgb,#e4e6e8 18%,transparent);--st-normal:oklch(0.74 0.12 150);--st-normal-ink:oklch(0.86 0.08 150);--st-elevated:oklch(0.74 0.12 95);--st-elevated-ink:oklch(0.86 0.08 95);--st-stage1:oklch(0.74 0.12 60);--st-stage1-ink:oklch(0.86 0.08 60);--st-stage2:oklch(0.74 0.12 30);--st-stage2-ink:oklch(0.86 0.08 30);--st-crisis:oklch(0.66 0.17 20);--st-crisis-ink:oklch(0.84 0.1 20);display:flex;flex-direction:column;gap:40px;padding:56px;margin:0 -56px;background:#2a2c2f;color:var(--color-text)">
+    <div style="display:flex;align-items:baseline;gap:16px"><h2 style="margin:0;font-size:40px">Compact · Dark</h2><span style="font-family:ui-monospace,monospace;font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">Same composables, dark ColorScheme</span></div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <div data-screen-label="08 Dashboard dark" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">08</span><b style="font-family:var(--font-heading);font-size:20px">Dashboard</b></div>
+        <div style="width:412px;height:892px;border:10px solid #050607;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>21:05</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="DashboardScreen" range="{{ range }}" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <dc-import name="NavBar" active="home" hint-size="100%,80px"></dc-import>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+      <div data-screen-label="09 Review dark" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">09</span><b style="font-family:var(--font-heading);font-size:20px">Review &amp; confirm</b></div>
+        <div style="width:412px;height:892px;border:10px solid #050607;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>21:05</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="ReviewScreen" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+      <div data-screen-label="10 Trends dark" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--color-accent-700)">10</span><b style="font-family:var(--font-heading);font-size:20px">Trends</b></div>
+        <div style="width:412px;height:892px;border:10px solid #050607;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+          <div style="height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>21:05</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+          <div style="flex:1;min-height:0"><dc-import name="TrendsScreen" range="{{ range }}" hint-size="100%,100%" style="height:100%"></dc-import></div>
+          <dc-import name="NavBar" active="trends" hint-size="100%,80px"></dc-import>
+          <div style="height:20px;flex:none;display:grid;place-items:center"><i style="width:108px;height:4px;background:color-mix(in srgb,var(--color-text) 40%,transparent)"></i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Medium foldable" style="display:flex;flex-direction:column;gap:40px">
+    <div style="display:flex;align-items:baseline;gap:16px"><h2 style="margin:0;font-size:40px">Medium · Foldable unfolded</h2><span style="font-family:ui-monospace,monospace;font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">600–840dp · NavigationRail · ListDetailPaneScaffold (History + Reading)</span></div>
+    <div data-screen-label="11 Foldable list-detail" style="width:840px;height:700px;border:12px solid #1b1d1f;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+      <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+      <div style="flex:1;min-height:0;display:flex">
+        <dc-import name="NavBar" variant="rail" active="history" hint-size="88px,100%"></dc-import>
+        <div style="width:360px;flex:none;border-right:1px solid var(--color-divider)"><dc-import name="HistoryScreen" selected-id="{{ one }}" hint-size="100%,100%" style="height:100%"></dc-import></div>
+        <div style="flex:1;min-width:0;position:relative"><i style="position:absolute;left:-1px;top:0;bottom:0;width:1px;background:color-mix(in srgb,var(--color-text) 30%,transparent)"></i><dc-import name="ReadingDetailScreen" show-back="{{ false }}" hint-size="100%,100%" style="height:100%"></dc-import></div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Expanded tablet" style="display:flex;flex-direction:column;gap:40px">
+    <div style="display:flex;align-items:baseline;gap:16px"><h2 style="margin:0;font-size:40px">Expanded · Tablet</h2><span style="font-family:ui-monospace,monospace;font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">&gt;840dp · NavigationRail · Dashboard + Trends side by side</span></div>
+    <div data-screen-label="12 Tablet dashboard" style="width:1280px;height:800px;border:12px solid #1b1d1f;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-bg);box-shadow:var(--shadow-lg)">
+      <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>08:20</span><span style="display:flex;gap:6px;align-items:center"><i style="width:12px;height:10px;background:currentColor"></i><i style="width:20px;height:10px;border:1.5px solid currentColor"></i></span></div>
+      <div style="flex:1;min-height:0;display:flex">
+        <dc-import name="NavBar" variant="rail" active="home" hint-size="88px,100%"></dc-import>
+        <div style="flex:1;min-width:0;border-right:1px solid var(--color-divider)"><dc-import name="DashboardScreen" range="{{ range }}" show-fab="{{ false }}" hint-size="100%,100%" style="height:100%"></dc-import></div>
+        <div style="width:520px;flex:none"><dc-import name="TrendsScreen" range="{{ range }}" hint-size="100%,100%" style="height:100%"></dc-import></div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Handoff notes" style="display:grid;grid-template-columns:repeat(3,minmax(0,380px));gap:40px">
+    <div class="blueprint" style="padding:20px;display:flex;flex-direction:column;gap:10px">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Navigation</div>
+      <pre style="margin:0;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap">Top-level: today · history · trends
+today → capture → review/{sessionId} → today
+today → import (PhotoPicker multi) → review/{sessionId} ×N
+history → reading/{id} → edit → review
+Compact: NavigationBar  ·  ≥600dp: NavigationRail
+History+Reading: ListDetailPaneScaffold</pre>
+    </div>
+    <div class="blueprint" style="padding:20px;display:flex;flex-direction:column;gap:10px">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Reading (Room entity)</div>
+      <pre style="margin:0;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap">id: Long
+type: BP | OXIMETER
+systolic, diastolic: Int?   // mmHg
+pulse: Int                  // bpm
+spo2: Int?                  // %
+takenAt: Instant
+takenAtSource: EXIF | CAPTURE | MANUAL
+note: String?
+photoUri: String
+confidence: Map&lt;Field, Float&gt;</pre>
+    </div>
+    <div class="blueprint" style="padding:20px;display:flex;flex-direction:column;gap:10px">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Extraction</div>
+      <pre style="margin:0;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap">CameraX ImageAnalysis → ML Kit text
+recognition (on-device) → digit layout
+parser (SYS/DIA/PUL or SpO₂/PR).
+ExifInterface TAG_DATETIME_ORIGINAL
++ OFFSET_TIME_ORIGINAL → takenAt.
+Field &lt; 0.80 confidence → flagged.
+Review screen is always shown.</pre>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;range&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;week&quot;,&quot;month&quot;],&quot;default&quot;:&quot;week&quot;,&quot;tsType&quot;:&quot;'week'|'month'&quot;,&quot;section&quot;:&quot;Data&quot;},&quot;categoryColors&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Display&quot;}}">
+const CATS = [
+  ['normal', 'Normal', '<120 / <80'], ['elevated', 'Elevated', '120–129 / <80'], ['stage1', 'Stage 1', '130–139 / 80–89'],
+  ['stage2', 'Stage 2', '≥140 / ≥90'], ['crisis', 'Crisis', '>180 / >120']
+];
+class Component extends DCLogic {
+  rootRef = React.createRef();
+  componentDidMount() { this.applyCats(); }
+  componentDidUpdate() { this.applyCats(); }
+  applyCats() {
+    const root = this.rootRef.current; if (!root) return;
+    const off = this.props.categoryColors === false;
+    const nodes = [root, ...root.querySelectorAll('[data-theme-root]')];
+    nodes.forEach(n => {
+      if (!n.__orig) { n.__orig = {}; CATS.forEach(([k]) => { n.__orig[k] = n.style.getPropertyValue(`--st-${k}`); n.__orig[k + 'i'] = n.style.getPropertyValue(`--st-${k}-ink`); }); }
+      CATS.forEach(([k]) => {
+        n.style.setProperty(`--st-${k}`, off ? 'var(--color-neutral-500)' : n.__orig[k]);
+        n.style.setProperty(`--st-${k}-ink`, off ? 'var(--color-text)' : n.__orig[k + 'i']);
+      });
+    });
+  }
+  renderVals() {
+    return {
+      rootRef: this.rootRef,
+      range: this.props.range ?? 'week',
+      one: 1,
+      legend: CATS.map(([k, label, rule]) => ({ label, rule, dot: `var(--st-${k})` }))
+    };
+  }
+}
+</script>
+</body>
+</html>

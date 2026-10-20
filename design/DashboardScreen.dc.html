@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="styles.css"></helmet>
+<div style="position:relative;display:flex;flex-direction:column;height:100%;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow:hidden">
+  <header style="display:flex;align-items:center;gap:12px;padding:12px 8px 4px 20px">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700)">Tue 20 Oct</div>
+      <div style="font-family:var(--font-heading);font-weight:600;font-size:30px;line-height:1.1">Vitals</div>
+    </div>
+    <button aria-label="More" style="width:48px;height:48px;display:grid;place-items:center;background:transparent;border:0;color:inherit;cursor:pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+  </header>
+  <div style="flex:1;overflow:auto;padding:8px 20px 140px;display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;border:1px solid var(--color-divider);align-self:flex-start">
+      <button onClick="{{ setWeek }}" style="min-height:40px;padding:0 16px;border:0;font:inherit;font-size:13px;cursor:pointer;background:{{ weekBg }};color:{{ weekFg }}">7 days</button>
+      <button onClick="{{ setMonth }}" style="min-height:40px;padding:0 16px;border:0;border-left:1px solid var(--color-divider);font:inherit;font-size:13px;cursor:pointer;background:{{ monthBg }};color:{{ monthFg }}">30 days</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(156px,1fr));gap:20px">
+      <section class="blueprint" style="grid-column:1/-1;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+          <span style="flex:1;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Blood pressure · {{ rangeLabel }} avg</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;background:{{ bpTag.bg }};color:{{ bpTag.fg }}"><i style="width:6px;height:6px;background:{{ bpTag.dot }}"></i>{{ bpTag.label }}</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <span style="font-family:var(--font-heading);font-weight:600;font-size:64px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em">{{ bpAvg }}</span>
+          <span style="font-size:14px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">mmHg</span>
+        </div>
+        <div style="position:relative;height:64px;border-bottom:1px solid var(--color-divider)">
+          <div style="position:absolute;left:0;right:0;top:33%;border-top:1px dashed color-mix(in srgb,var(--color-text) 22%,transparent)"></div>
+          <div style="position:absolute;left:0;right:0;top:78%;border-top:1px dashed color-mix(in srgb,var(--color-text) 22%,transparent)"></div>
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
+            <polyline points="{{ sysPts }}" fill="none" stroke="var(--color-accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"></polyline>
+            <polyline points="{{ diaPts }}" fill="none" stroke="var(--color-accent)" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" stroke-linejoin="round"></polyline>
+          </svg>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:color-mix(in srgb,var(--color-text) 62%,transparent)">
+          <span>{{ count }} readings</span><span>SYS {{ sysRange }}</span><span>DIA {{ diaRange }}</span>
+        </div>
+      </section>
+
+      <section class="blueprint" style="padding:14px;display:flex;flex-direction:column;gap:6px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>Heart rate</div>
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:var(--font-heading);font-weight:600;font-size:44px;line-height:1;font-variant-numeric:tabular-nums">{{ hrAvg }}</span><span style="font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">bpm</span></div>
+        <svg viewBox="0 0 100 40" preserveAspectRatio="none" style="width:100%;height:32px;overflow:visible"><polyline points="{{ hrPts }}" fill="none" stroke="var(--color-accent)" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"></polyline></svg>
+        <div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 62%,transparent)">Range {{ hrRange }}</div>
+      </section>
+
+      <section class="blueprint" style="padding:14px;display:flex;flex-direction:column;gap:6px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path></svg>SpO₂</div>
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:var(--font-heading);font-weight:600;font-size:44px;line-height:1;font-variant-numeric:tabular-nums">{{ spAvg }}</span><span style="font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">%</span></div>
+        <svg viewBox="0 0 100 40" preserveAspectRatio="none" style="width:100%;height:32px;overflow:visible"><polyline points="{{ spPts }}" fill="none" stroke="var(--color-accent)" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"></polyline></svg>
+        <div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 62%,transparent)">Lowest {{ spMin }}%</div>
+      </section>
+    </div>
+
+    <section style="display:flex;flex-direction:column;gap:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h4 style="margin:0;font-size:20px">Latest</h4>
+        <span style="font-family:var(--font-heading);font-weight:600;font-size:14px;color:var(--color-accent-700)">See all</span>
+      </div>
+      <sc-for list="{{ latest }}" as="r" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 9%,transparent)">
+          <div style="width:48px;height:48px;flex:none;display:grid;place-items:center;border:1px solid var(--color-divider);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--color-text) 7%,transparent) 0 4px,transparent 4px 8px);font-family:ui-monospace,monospace;font-size:8px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">IMG</div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:var(--font-heading);font-weight:600;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums">{{ r.value }}</span><span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">{{ r.unit }}</span></div>
+            <div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 62%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.meta }}</div>
+          </div>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;background:{{ r.tag.bg }};color:{{ r.tag.fg }}"><i style="width:6px;height:6px;background:{{ r.tag.dot }}"></i>{{ r.tag.label }}</span>
+        </div>
+      </sc-for>
+    </section>
+  </div>
+
+  <sc-if value="{{ showFab }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;right:20px;bottom:20px;display:flex;align-items:flex-end;gap:12px">
+      <button aria-label="Import photos" style="width:56px;height:56px;display:grid;place-items:center;background:var(--color-bg);color:var(--color-text);border:1px solid var(--color-divider);box-shadow:var(--shadow-md);cursor:pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg></button>
+      <button class="blueprint" style="height:56px;padding:0 20px;display:flex;align-items:center;gap:10px;background:var(--color-accent);color:var(--color-bg);border:1px solid var(--color-accent);box-shadow:var(--shadow-md);font-family:var(--font-heading);font-weight:600;font-size:17px;letter-spacing:.02em;cursor:pointer" style-hover="background:var(--color-accent-600)">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>Scan reading
+      </button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:412,&quot;height&quot;:820},&quot;range&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;week&quot;,&quot;month&quot;],&quot;default&quot;:&quot;week&quot;,&quot;tsType&quot;:&quot;'week'|'month'&quot;},&quot;showFab&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const WEEK = { sys:[130,124,127,121,134,119,127], dia:[82,78,79,76,84,74,80], hr:[74,69,71,66,75,66,71], sp:[97,96,98,97,96,98,97] };
+const M23 = { sys:[132,128,135,130,126,138,129,131,127,133,136,129,125,130,134,128,131,127,124,129,133,128,131], dia:[84,81,86,83,79,88,82,83,80,85,87,82,78,83,86,81,84,80,77,82,85,81,83], hr:[72,75,70,78,73,71,76,74,69,77,72,70,75,73,71,74,76,68,72,75,73,70,74], sp:[96,97,95,96,97,94,96,97,96,95,96,97,96,95,97,96,96,97,95,96,97,96,96] };
+const MONTH = { sys:M23.sys.concat(WEEK.sys), dia:M23.dia.concat(WEEK.dia), hr:M23.hr.concat(WEEK.hr), sp:M23.sp.concat(WEEK.sp) };
+const avg = a => Math.round(a.reduce((s, v) => s + v, 0) / a.length);
+const pts = (a, lo, hi) => a.map((v, i) => `${(i / (a.length - 1) * 100).toFixed(1)},${(40 - (v - lo) / (hi - lo) * 40).toFixed(1)}`).join(' ');
+const bpCat = (s, d) => s > 180 || d > 120 ? 'crisis' : s >= 140 || d >= 90 ? 'stage2' : s >= 130 || d >= 80 ? 'stage1' : s >= 120 ? 'elevated' : 'normal';
+const LABEL = { normal:'Normal', elevated:'Elevated', stage1:'Stage 1', stage2:'Stage 2', crisis:'Crisis', low:'Low' };
+const tag = c => ({ label: LABEL[c], bg: `color-mix(in oklch, var(--st-${c}) 18%, transparent)`, fg: `var(--st-${c}-ink)`, dot: `var(--st-${c})` });
+
+class Component extends DCLogic {
+  state = { range: this.props.range === 'month' ? 'month' : 'week' };
+  componentDidUpdate(p) { if (p.range !== this.props.range && this.props.range) this.setState({ range: this.props.range }); }
+  renderVals() {
+    const wk = this.state.range === 'week';
+    const d = wk ? WEEK : MONTH;
+    const s = avg(d.sys), di = avg(d.dia);
+    const on = 'var(--color-accent)', off = 'transparent';
+    return {
+      setWeek: () => this.setState({ range: 'week' }), setMonth: () => this.setState({ range: 'month' }),
+      weekBg: wk ? on : off, weekFg: wk ? 'var(--color-bg)' : 'var(--color-text)',
+      monthBg: wk ? off : on, monthFg: wk ? 'var(--color-text)' : 'var(--color-bg)',
+      rangeLabel: wk ? '7-day' : '30-day',
+      bpAvg: `${s}/${di}`, bpTag: tag(bpCat(s, di)),
+      sysPts: pts(d.sys, 60, 150), diaPts: pts(d.dia, 60, 150),
+      count: d.sys.length + d.sp.length,
+      sysRange: `${Math.min(...d.sys)}–${Math.max(...d.sys)}`, diaRange: `${Math.min(...d.dia)}–${Math.max(...d.dia)}`,
+      hrAvg: avg(d.hr), hrPts: pts(d.hr, 55, 85), hrRange: `${Math.min(...d.hr)}–${Math.max(...d.hr)}`,
+      spAvg: avg(d.sp), spPts: pts(d.sp, 92, 100), spMin: Math.min(...d.sp),
+      showFab: this.props.showFab ?? true,
+      latest: [
+        { value: '127/80', unit: 'mmHg · 71 bpm', meta: 'Today 08:14 · Before morning meds', tag: tag('stage1') },
+        { value: '97%', unit: 'SpO₂ · 68 bpm', meta: 'Today 07:52', tag: tag('normal') },
+        { value: '119/74', unit: 'mmHg · 66 bpm', meta: 'Mon 19 Oct 21:30 · After walk', tag: tag('normal') }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

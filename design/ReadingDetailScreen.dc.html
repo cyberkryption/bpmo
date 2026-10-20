@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="styles.css"></helmet>
+<div style="display:flex;flex-direction:column;height:100%;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow:hidden">
+  <header style="display:flex;align-items:center;gap:4px;padding:8px 8px 4px 4px">
+    <sc-if value="{{ showBack }}" hint-placeholder-val="{{ true }}">
+      <button aria-label="Back" style="width:48px;height:48px;display:grid;place-items:center;background:transparent;border:0;color:inherit;cursor:pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></button>
+    </sc-if>
+    <div style="flex:1;padding-left:16px;font-family:var(--font-heading);font-weight:600;font-size:22px">Reading</div>
+    <button aria-label="Edit" style="width:48px;height:48px;display:grid;place-items:center;background:transparent;border:0;color:inherit;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg></button>
+    <button aria-label="Delete" style="width:48px;height:48px;display:grid;place-items:center;background:transparent;border:0;color:inherit;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+  </header>
+  <div style="flex:1;overflow:auto;padding:8px 20px 28px;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;background:color-mix(in oklch,var(--st-stage1) 18%,transparent);color:var(--st-stage1-ink)"><i style="width:6px;height:6px;background:var(--st-stage1)"></i>Stage 1 hypertension</span>
+      <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:var(--font-heading);font-weight:600;font-size:72px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em">127/80</span><span style="font-size:14px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">mmHg</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--color-divider);border-bottom:1px solid var(--color-divider)">
+      <div style="padding:12px 0;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 60%,transparent)">Systolic</span><span style="font-family:var(--font-heading);font-weight:600;font-size:24px">127</span></div>
+      <div style="padding:12px 12px;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--color-divider)"><span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 60%,transparent)">Diastolic</span><span style="font-family:var(--font-heading);font-weight:600;font-size:24px">80</span></div>
+      <div style="padding:12px 12px;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--color-divider)"><span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 60%,transparent)">Pulse</span><span style="font-family:var(--font-heading);font-weight:600;font-size:24px">71</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Note</span>
+      <p style="margin:0;font-size:15px;line-height:1.5">Before morning meds. Left arm, seated five minutes.</p>
+    </div>
+    <figure class="blueprint" style="position:relative;aspect-ratio:4/3;margin:0;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--color-text) 7%,transparent) 0 6px,transparent 6px 12px)">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span style="position:absolute;left:10px;top:8px;font-family:ui-monospace,monospace;font-size:11px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">source photo · IMG_2041.jpg</span>
+    </figure>
+    <dl style="margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;font-size:13px">
+      <dt style="color:color-mix(in srgb,var(--color-text) 60%,transparent)">Taken</dt><dd style="margin:0">Tue 20 Oct 2026, 08:14:03</dd>
+      <dt style="color:color-mix(in srgb,var(--color-text) 60%,transparent)">Date source</dt><dd style="margin:0">EXIF DateTimeOriginal</dd>
+      <dt style="color:color-mix(in srgb,var(--color-text) 60%,transparent)">Device</dt><dd style="margin:0">Blood pressure monitor</dd>
+      <dt style="color:color-mix(in srgb,var(--color-text) 60%,transparent)">Edited</dt><dd style="margin:0">Diastolic confirmed manually</dd>
+    </dl>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:412,&quot;height&quot;:820},&quot;showBack&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() { return { showBack: this.props.showBack ?? true }; }
+}
+</script>
+</body>
+</html>

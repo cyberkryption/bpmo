@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="styles.css"></helmet>
+<div style="display:flex;flex-direction:column;height:100%;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow:hidden">
+  <header style="display:flex;align-items:center;gap:8px;padding:12px 8px 4px 20px">
+    <div style="flex:1;font-family:var(--font-heading);font-weight:600;font-size:30px;line-height:1.1">History</div>
+    <button aria-label="Search" style="width:48px;height:48px;display:grid;place-items:center;background:transparent;border:0;color:inherit;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></button>
+  </header>
+  <div style="display:flex;gap:8px;padding:8px 20px 4px">
+    <sc-for list="{{ filters }}" as="f" hint-placeholder-count="3">
+      <button onClick="{{ f.onClick }}" style="min-height:36px;padding:0 14px;font:inherit;font-size:13px;cursor:pointer;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.fg }}">{{ f.label }}</button>
+    </sc-for>
+  </div>
+  <div style="flex:1;overflow:auto;padding:0 20px 24px">
+    <sc-for list="{{ days }}" as="d" hint-placeholder-count="2">
+      <div style="padding:16px 0 4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">{{ d.title }}</div>
+      <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="2">
+        <button onClick="{{ r.onClick }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 8px;margin:0 -8px;width:calc(100% + 16px);text-align:left;font:inherit;color:inherit;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 9%,transparent);background:{{ r.bg }};box-shadow:{{ r.ring }}">
+          <span style="width:40px;height:40px;flex:none;display:grid;place-items:center;border:1px solid var(--color-divider);color:var(--color-accent)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{ r.icon }}"></path></svg>
+          </span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="display:flex;align-items:baseline;gap:6px"><span style="font-family:var(--font-heading);font-weight:600;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums">{{ r.value }}</span><span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">{{ r.unit }}</span></span>
+            <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 62%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.meta }}</span>
+          </span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;background:{{ r.tag.bg }};color:{{ r.tag.fg }}"><i style="width:6px;height:6px;background:{{ r.tag.dot }}"></i>{{ r.tag.label }}</span>
+        </button>
+      </sc-for>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:412,&quot;height&quot;:820},&quot;selectedId&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;onSelect&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(id:number)=&gt;void&quot;}}">
+const BP = 'M22 12h-4l-3 9L9 3l-3 9H2';
+const OX = 'M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z';
+const LABEL = { normal:'Normal', elevated:'Elevated', stage1:'Stage 1', stage2:'Stage 2', crisis:'Crisis' };
+const tag = c => ({ label: LABEL[c], bg: `color-mix(in oklch, var(--st-${c}) 18%, transparent)`, fg: `var(--st-${c}-ink)`, dot: `var(--st-${c})` });
+const DATA = [
+  { day: 'Today · Tue 20 Oct', items: [
+    { id: 1, t: 'bp', value: '127/80', unit: 'mmHg · 71 bpm', meta: '08:14 · Before morning meds', c: 'stage1' },
+    { id: 2, t: 'ox', value: '97%', unit: 'SpO₂ · 68 bpm', meta: '07:52', c: 'normal' } ] },
+  { day: 'Mon 19 Oct', items: [
+    { id: 3, t: 'bp', value: '119/74', unit: 'mmHg · 66 bpm', meta: '21:30 · After walk', c: 'normal' },
+    { id: 4, t: 'ox', value: '98%', unit: 'SpO₂ · 64 bpm', meta: '21:28', c: 'normal' } ] },
+  { day: 'Sun 18 Oct', items: [
+    { id: 5, t: 'bp', value: '134/84', unit: 'mmHg · 75 bpm', meta: '09:02 · Poor sleep, coffee', c: 'stage1' } ] },
+  { day: 'Sat 17 Oct', items: [
+    { id: 6, t: 'bp', value: '121/76', unit: 'mmHg · 66 bpm', meta: '22:40', c: 'elevated' },
+    { id: 7, t: 'ox', value: '96%', unit: 'SpO₂ · 70 bpm', meta: '22:38', c: 'normal' } ] }
+];
+
+class Component extends DCLogic {
+  state = { filter: 'all', sel: this.props.selectedId ?? null };
+  renderVals() {
+    const f = this.state.filter;
+    const FILTERS = [['all', 'All'], ['bp', 'Blood pressure'], ['ox', 'SpO₂']];
+    return {
+      filters: FILTERS.map(([k, label]) => ({ label, onClick: () => this.setState({ filter: k }),
+        border: f === k ? 'var(--color-accent)' : 'var(--color-divider)', bg: f === k ? 'var(--color-accent)' : 'transparent', fg: f === k ? 'var(--color-bg)' : 'var(--color-text)' })),
+      days: DATA.map(d => ({ title: d.day, rows: d.items.filter(i => f === 'all' || i.t === f).map(i => ({
+        value: i.value, unit: i.unit, meta: i.meta, icon: i.t === 'bp' ? BP : OX, tag: tag(i.c),
+        onClick: () => { this.setState({ sel: i.id }); this.props.onSelect && this.props.onSelect(i.id); },
+        bg: this.state.sel === i.id ? 'var(--color-accent-100)' : 'transparent',
+        ring: this.state.sel === i.id ? 'inset 3px 0 0 var(--color-accent)' : 'none'
+      })) })).filter(d => d.rows.length)
+    };
+  }
+}
+</script>
+</body>
+</html>
