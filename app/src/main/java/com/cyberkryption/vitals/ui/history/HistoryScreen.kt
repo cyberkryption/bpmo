@@ -46,7 +46,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.window.core.layout.WindowSizeClass
 import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.core.Reading
 import com.cyberkryption.vitals.ui.DateFormats
@@ -58,6 +57,7 @@ import com.cyberkryption.vitals.ui.components.ReadingRow
 import com.cyberkryption.vitals.ui.components.ScreenHeader
 import com.cyberkryption.vitals.ui.components.TypeIcon
 import com.cyberkryption.vitals.ui.detail.ReadingDetailScreen
+import com.cyberkryption.vitals.ui.isMediumOrWider
 import com.cyberkryption.vitals.ui.rememberDateFormats
 import com.cyberkryption.vitals.ui.theme.Vitals
 import com.cyberkryption.vitals.ui.theme.VitalsType
@@ -77,7 +77,7 @@ fun HistoryScreen(
     viewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory),
 ) {
     val adaptiveInfo = currentWindowAdaptiveInfo()
-    val twoPane = adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
+    val twoPane = adaptiveInfo.windowSizeClass.isMediumOrWider
     val directive = calculatePaneScaffoldDirective(adaptiveInfo).copy(
         maxHorizontalPartitions = if (twoPane) 2 else 1,
         horizontalPartitionSpacerSize = 0.dp,

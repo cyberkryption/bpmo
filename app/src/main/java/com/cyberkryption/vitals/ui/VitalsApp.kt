@@ -30,7 +30,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.toRoute
-import androidx.window.core.layout.WindowSizeClass
 import com.cyberkryption.vitals.AppContainer
 import com.cyberkryption.vitals.core.Reading
 import com.cyberkryption.vitals.review.ReviewItem
@@ -62,8 +61,8 @@ import com.cyberkryption.vitals.ui.trends.TrendsScreen
 @Composable
 fun VitalsApp(container: AppContainer, navController: NavHostController) {
     val sizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    val useRail = sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
-    val expanded = sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
+    val useRail = sizeClass.isMediumOrWider
+    val expanded = sizeClass.isExpanded
 
     val entry by navController.currentBackStackEntryAsState()
     val destination = entry?.destination

@@ -85,7 +85,8 @@ private class Unlocker(
     private var promptShowing = false
     private val keyguard = activity.getSystemService(KeyguardManager::class.java)
 
-    private val prompt = BiometricPrompt(
+    // Typed explicitly: the callback below refers back to this property.
+    private val prompt: BiometricPrompt = BiometricPrompt(
         activity,
         ContextCompat.getMainExecutor(activity),
         object : BiometricPrompt.AuthenticationCallback() {
