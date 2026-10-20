@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Vitals</string>
+
+    <!-- Navigation -->
+    <string name="nav_today">Today</string>
+    <string name="nav_history">History</string>
+    <string name="nav_trends">Trends</string>
+
+    <!-- Actions -->
+    <string name="action_back">Back</string>
+    <string name="action_close">Close</string>
+    <string name="action_close_search">Close search</string>
+    <string name="action_more">More</string>
+    <string name="action_scan">Scan reading</string>
+    <string name="action_import">Import photos</string>
+    <string name="action_see_all">See all</string>
+    <string name="action_search">Search</string>
+    <string name="action_export">Export</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_skip">Skip</string>
+    <string name="action_save">Save</string>
+    <string name="action_save_next">Save &amp; next</string>
+    <string name="action_change">Change</string>
+    <string name="action_set_date">Set date</string>
+    <string name="action_next">Next</string>
+    <string name="action_done">Done</string>
+    <string name="action_previous_period">Previous period</string>
+    <string name="action_next_period">Next period</string>
+
+    <!-- Metrics and units -->
+    <string name="metric_blood_pressure">Blood pressure</string>
+    <string name="metric_heart_rate">Heart rate</string>
+    <string name="metric_spo2">SpO₂</string>
+    <string name="type_oximeter">Oximeter</string>
+    <string name="field_systolic">Systolic</string>
+    <string name="field_diastolic">Diastolic</string>
+    <string name="field_pulse">Pulse</string>
+    <string name="field_spo2">SpO₂</string>
+    <string name="unit_mmhg">mmHg</string>
+    <string name="unit_avg_mmhg">avg mmHg</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="unit_percent" formatted="false">%</string>
+    <string name="unit_bp_with_pulse">mmHg · %1$d bpm</string>
+    <string name="unit_spo2_with_pulse">SpO₂ · %1$d bpm</string>
+    <string name="value_none">—</string>
+    <string name="list_and">" and "</string>
+
+    <!-- Categories (AHA, adult) -->
+    <string name="status_normal">Normal</string>
+    <string name="status_elevated">Elevated</string>
+    <string name="status_stage1">Stage 1</string>
+    <string name="status_stage2">Stage 2</string>
+    <string name="status_crisis">Crisis</string>
+    <string name="status_stage1_long">Stage 1 hypertension</string>
+    <string name="status_stage2_long">Stage 2 hypertension</string>
+    <string name="status_crisis_long">Hypertensive crisis</string>
+    <string name="status_spo2_low">Low</string>
+    <string name="status_spo2_very_low">Very low</string>
+    <string name="status_spo2_normal_long">Normal SpO₂</string>
+    <string name="status_spo2_low_long">Low SpO₂</string>
+    <string name="status_spo2_very_low_long">Very low SpO₂</string>
+
+    <!-- Ranges -->
+    <string name="span_7_days">7 days</string>
+    <string name="span_30_days">30 days</string>
+    <string name="span_7_day">7-day</string>
+    <string name="span_30_day">30-day</string>
+    <string name="span_week">Week</string>
+    <string name="span_month">Month</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_bp_kicker">Blood pressure · %1$s avg</string>
+    <plurals name="dashboard_readings">
+        <item quantity="one">%d reading</item>
+        <item quantity="other">%d readings</item>
+    </plurals>
+    <string name="dashboard_sys_range">SYS %1$d–%2$d</string>
+    <string name="dashboard_dia_range">DIA %1$d–%2$d</string>
+    <string name="dashboard_hr_range">Range %1$d–%2$d</string>
+    <string name="dashboard_spo2_lowest">Lowest %1$d%%</string>
+    <string name="dashboard_no_data">No readings yet</string>
+    <string name="dashboard_empty_week">No blood pressure readings in the last 7 days</string>
+    <string name="dashboard_empty_month">No blood pressure readings in the last 30 days</string>
+    <string name="dashboard_latest">Latest</string>
+    <string name="dashboard_latest_empty">No readings yet. Scan a monitor or import photos to get started.</string>
+    <string name="today_at">Today %1$s</string>
+    <string name="lock_offer_title">Lock Vitals?</string>
+    <string name="lock_offer_body">Require your fingerprint, face or screen lock to open the app. You can change this in Settings.</string>
+    <string name="lock_offer_confirm">Turn on</string>
+    <string name="lock_offer_dismiss">Not now</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="filter_all">All</string>
+    <string name="history_today">Today · %1$s</string>
+    <string name="history_empty">No readings yet. Scan a monitor or import photos to get started.</string>
+    <string name="history_no_matches">No readings match.</string>
+    <string name="history_search_hint">Search notes or values</string>
+    <string name="history_select">Select a reading to see its details.</string>
+
+    <!-- Trends -->
+    <string name="trends_title">Trends</string>
+    <string name="trends_bar_legend">Bar = diastolic → systolic</string>
+    <string name="trends_threshold_legend">130 / 80 thresholds</string>
+    <string name="trends_resting_range">Resting range %1$d–%2$d bpm</string>
+    <string name="trends_spo2_threshold" formatted="false">Dashed = 95% threshold</string>
+    <string name="trends_categories">BP categories</string>
+    <string name="trends_categories_empty">No blood pressure readings in this period.</string>
+    <string name="trends_summary">Summary</string>
+    <string name="trends_empty">No readings in this period.</string>
+    <string name="summary_metric">Metric</string>
+    <string name="summary_avg">Avg</string>
+    <string name="summary_min">Min</string>
+    <string name="summary_max">Max</string>
+    <string name="summary_systolic">Systolic</string>
+    <string name="summary_diastolic">Diastolic</string>
+    <string name="summary_pulse">Pulse</string>
+    <string name="summary_spo2" formatted="false">SpO₂ %</string>
+
+    <!-- Export -->
+    <string name="export_csv">All readings (CSV)</string>
+    <string name="export_pdf">This period (PDF)</string>
+    <string name="export_chooser_title">Share readings</string>
+    <string name="pdf_kicker">Vitals · summary</string>
+    <string name="pdf_readings">Readings</string>
+    <string name="pdf_col_date">Date</string>
+    <string name="pdf_col_time">Time</string>
+    <string name="pdf_col_reading">Reading</string>
+    <string name="pdf_col_pulse">Pulse</string>
+    <string name="pdf_col_category">Category</string>
+    <string name="pdf_col_note">Note</string>
+    <string name="pdf_footer">Categories follow AHA guidelines for adults. Vitals is not a medical device.</string>
+
+    <!-- Reading detail -->
+    <string name="detail_title">Reading</string>
+    <string name="detail_photo">Source photo</string>
+    <string name="detail_taken">Taken</string>
+    <string name="detail_date_source">Date source</string>
+    <string name="detail_device">Device</string>
+    <string name="detail_edited">Edited</string>
+    <string name="detail_not_edited">No</string>
+    <string name="detail_confirmed_manually">%1$s confirmed manually</string>
+    <string name="date_source_exif">EXIF DateTimeOriginal</string>
+    <string name="date_source_capture">Capture time</string>
+    <string name="date_source_manual">Manual</string>
+    <string name="device_bp">Blood pressure monitor</string>
+    <string name="device_oximeter">Pulse oximeter</string>
+    <string name="delete_title">Delete reading?</string>
+    <string name="delete_body">This removes the reading and its photo. It can\'t be undone.</string>
+
+    <!-- Capture -->
+    <string name="capture_mode_bp">BP monitor</string>
+    <string name="capture_found">Display found · %1$s</string>
+    <string name="capture_hint">Fit the display inside the frame. Avoid glare.</string>
+    <string name="capture_failed">Couldn\'t take the photo. Try again.</string>
+    <string name="capture_gallery">Import from gallery</string>
+    <string name="capture_shutter">Capture</string>
+    <string name="capture_auto">Auto</string>
+    <string name="capture_manual">Manual</string>
+    <string name="capture_auto_on">Auto-capture on</string>
+    <string name="capture_auto_off">Auto-capture off</string>
+    <string name="capture_torch_on">Turn on light</string>
+    <string name="capture_torch_off">Turn off light</string>
+    <string name="capture_permission">Vitals needs the camera to read your monitor\'s display.</string>
+    <string name="capture_allow">Allow camera</string>
+    <string name="capture_open_settings">Open settings</string>
+
+    <!-- Import -->
+    <string name="import_title">Import photos</string>
+    <plurals name="import_selected">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <string name="import_subtitle">Readings are dated from each photo\'s EXIF timestamp.</string>
+    <string name="import_this_week">This week</string>
+    <string name="import_earlier">Earlier</string>
+    <string name="import_no_date">No date</string>
+    <string name="import_note">Each photo opens in review before saving.</string>
+    <plurals name="import_no_date_note">
+        <item quantity="one">%d photo has no EXIF date — you\'ll set it during review.</item>
+        <item quantity="other">%d photos have no EXIF date — you\'ll set them during review.</item>
+    </plurals>
+    <string name="import_failed">Couldn\'t copy the photos. Try again.</string>
+    <string name="import_review">Review %1$d</string>
+    <string name="import_select">Select photos</string>
+
+    <!-- Review -->
+    <string name="review_title">Review reading</string>
+    <string name="review_edit_title">Edit reading</string>
+    <string name="review_counter">%1$d of %2$d</string>
+    <string name="review_reading_display">Reading the display…</string>
+    <string name="box_sys">SYS</string>
+    <string name="box_dia">DIA</string>
+    <string name="box_pul">PUL</string>
+    <string name="box_spo2">SpO₂</string>
+    <string name="review_caption_confidence">%1$s · %2$d%%</string>
+    <string name="review_caption_check">%1$s · %2$d%% · check</string>
+    <string name="review_caption_edited">%1$s · edited</string>
+    <string name="review_error_range">Range %1$d–%2$d</string>
+    <string name="review_error_below_systolic">Must be below systolic</string>
+    <plurals name="review_hard_to_read">
+        <item quantity="one">%1$s was hard to read. Compare with the photo and correct if needed.</item>
+        <item quantity="other">%1$s were hard to read. Compare with the photo and correct if needed.</item>
+    </plurals>
+    <string name="review_no_values">No values found on the display. Enter them from the photo.</string>
+    <string name="review_unreadable">The photo couldn\'t be read. Enter the values from the photo.</string>
+    <string name="review_category">Category</string>
+    <string name="review_no_date">No date set</string>
+    <string name="review_source_exif_original">From photo EXIF · DateTimeOriginal</string>
+    <string name="review_source_exif_datetime">From photo EXIF · DateTime</string>
+    <string name="review_source_capture">Capture time</string>
+    <string name="review_source_manual">Set manually</string>
+    <string name="review_source_missing">This photo has no EXIF date. Set one to save.</string>
+    <string name="review_pick_time">Time taken</string>
+    <string name="review_note">Note</string>
+    <string name="review_note_hint">How were you feeling? Arm, posture, meds…</string>
+    <string-array name="note_chips">
+        <item>Before meds</item>
+        <item>After meds</item>
+        <item>Left arm</item>
+        <item>After exercise</item>
+        <item>Stressed</item>
+    </string-array>
+    <string name="crisis_title">Hypertensive crisis range</string>
+    <string name="crisis_body">Wait five minutes and measure again. If it\'s still this high, contact your doctor straight away. If you also have chest pain, shortness of breath, back pain, numbness, weakness, a change in vision or difficulty speaking, call emergency services now.</string>
+    <string name="crisis_save">Save reading</string>
+    <string name="crisis_check">Check values</string>
+
+    <!-- Lock -->
+    <string name="lock_title">Vitals locked</string>
+    <string name="lock_body">Your readings and photos are private. Unlock to continue.</string>
+    <string name="lock_sensor">Unlock with fingerprint</string>
+    <string name="lock_idle">Touch the sensor</string>
+    <string name="lock_idle_detail">Fingerprint or face</string>
+    <string name="lock_scanning">Scanning…</string>
+    <string name="lock_scanning_detail">Hold still</string>
+    <string name="lock_failed">Not recognised</string>
+    <plurals name="lock_attempts_left">
+        <item quantity="one">%d attempt left, then PIN</item>
+        <item quantity="other">%d attempts left, then PIN</item>
+    </plurals>
+    <string name="lock_use_credential">Use device PIN / pattern</string>
+    <string name="lock_relock_immediately">Re-locks immediately in background</string>
+    <string name="lock_relock_one_minute">Re-locks after 1 minute in background</string>
+    <string name="lock_relock_five_minutes">Re-locks after 5 minutes in background</string>
+    <string name="lock_prompt_title">Unlock Vitals</string>
+    <string name="lock_prompt_subtitle">Use your fingerprint, face or screen lock</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_security">Security</string>
+    <string name="settings_require_biometric">Require biometric to open</string>
+    <string name="settings_require_biometric_detail">Unlock with your fingerprint, face or screen lock.</string>
+    <string name="settings_not_enrolled">Set up a fingerprint, face or screen lock on this device to use the lock.</string>
+    <string name="settings_open_system">Open settings</string>
+    <string name="settings_relock">Re-lock after</string>
+    <string name="settings_relock_immediately">Immediately</string>
+    <string name="settings_relock_one_minute">1 minute</string>
+    <string name="settings_relock_five_minutes">5 minutes</string>
+    <string name="settings_display">Display</string>
+    <string name="settings_category_colors">Category colours</string>
+    <string name="settings_category_colors_detail">Colour readings by blood pressure category. Off shows neutral tags.</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_body">Categories follow AHA guidelines for adults. Vitals is not a medical device; talk to your doctor about your readings.</string>
+    <string name="settings_version">Version %1$s</string>
+</resources>
