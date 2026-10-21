@@ -34,6 +34,7 @@ fun VitalsDialog(
     dismissText: String? = null,
     onDismiss: () -> Unit = onDismissRequest,
     confirmColor: Color = Vitals.colors.primaryInk,
+    showActions: Boolean = true,
     properties: DialogProperties = DialogProperties(),
     body: @Composable ColumnScope.() -> Unit,
 ) {
@@ -54,12 +55,14 @@ fun VitalsDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 content = body,
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
-            ) {
-                if (dismissText != null) TextAction(dismissText, onDismiss, color = c.text)
-                TextAction(confirmText, onConfirm, color = confirmColor)
+            if (showActions) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                ) {
+                    if (dismissText != null) TextAction(dismissText, onDismiss, color = c.text)
+                    TextAction(confirmText, onConfirm, color = confirmColor)
+                }
             }
         }
     }

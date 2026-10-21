@@ -8,6 +8,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Set up once in the repository's Actions secrets; see README > Signing.
+      HAS_SIGNING_KEY: ${{ secrets.VITALS_KEYSTORE_BASE64 != '' }}
+      VITALS_KEYSTORE_PASSWORD: ${{ secrets.VITALS_KEYSTORE_PASSWORD }}
+      # Each build gets a higher versionCode, so it always installs as an update.
+      VITALS_BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
 
@@ -18,11 +24,28 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # Every build signed with the same key installs over the last one and keeps its data.
+      - name: Decode signing key
+        if: env.HAS_SIGNING_KEY == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.VITALS_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/vitals-signing.p12"
+          echo "VITALS_KEYSTORE=$RUNNER_TEMP/vitals-signing.p12" >> "$GITHUB_ENV"
+
+      - name: No signing key
+        if: env.HAS_SIGNING_KEY != 'true'
+        run: echo "::warning::VITALS_KEYSTORE_BASE64 isn't set, so this APK uses a throwaway debug key and can't update an earlier install."
+
       - name: Unit tests
         run: ./gradlew :core:test :app:testDebugUnitTest --stacktrace
 
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Build release APK
+        if: env.HAS_SIGNING_KEY == 'true'
+        run: ./gradlew :app:assembleRelease --stacktrace
 
       - name: Lint
         run: ./gradlew :app:lintDebug
@@ -35,3 +58,10 @@ jobs:
             app/build/outputs/apk/debug/*.apk
             app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        if: env.HAS_SIGNING_KEY == 'true'
+        with:
+          name: vitals-release
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

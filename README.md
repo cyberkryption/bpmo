@@ -56,6 +56,18 @@ Readings and photos are kept in app-private storage and excluded from cloud back
 | **Light** | <img src="docs/screenshots/light-detail.png" alt="Reading detail, light" width="250"> | <img src="docs/screenshots/light-settings.png" alt="Settings, light" width="250"> | <img src="docs/screenshots/light-lock.png" alt="Lock screen, light" width="250"> |
 | **Dark** | <img src="docs/screenshots/dark-detail.png" alt="Reading detail, dark" width="250"> | <img src="docs/screenshots/dark-settings.png" alt="Settings, dark" width="250"> | <img src="docs/screenshots/dark-lock.png" alt="Lock screen, dark" width="250"> |
 
+### Your data
+
+Everything stays on the phone, in storage only Vitals can read:
+
+- **Readings** are in a SQLite database (Room), `vitals.db`.
+- **Photos** are JPEGs in the app's private `photos/` folder.
+- **Settings** are in a DataStore preferences file.
+
+Android keeps all of this when the app is **updated**, as long as the new APK is signed with the same key and has a higher version code. Every CI build is (see [Signing](#signing)), so installing a newer APK over the old one keeps your readings. The database schema is versioned, and a change that needs one ships with a migration, never a wipe.
+
+Uninstalling the app, clearing its storage or moving to a new phone does remove the data, and cloud backup is off because it's health data. For those cases, **Settings › Your data › Back up readings** saves every reading and photo to a single `.zip` file wherever you choose, such as Downloads or a drive. **Restore from a backup** adds them back, skipping any that are already there, so restoring twice doesn't double up. The file isn't encrypted, so keep it somewhere private.
+
 ### Phones, foldables and tablets
 
 On phones, navigation is a bar along the bottom. On wider screens, such as an unfolded foldable, it moves to a rail on the left that also holds the Scan and Import buttons. History then shows the list and the selected reading side by side. On tablets, Trends sits beside the Today screen (see the top of this page).
@@ -75,7 +87,16 @@ You need JDK 17 or newer and the Android SDK (platform 35).
 ./gradlew :app:testDebugUnitTest -Pscreenshots   # re-renders docs/screenshots with Robolectric
 ```
 
-On every push, GitHub Actions (`.github/workflows/android.yml`) runs the tests, builds the debug APK and runs lint. You can download the APK from each run's `vitals-debug` artifact. On `claude/**` branches, the Screenshots workflow re-renders the screenshots and commits any that changed.
+On every push, GitHub Actions (`.github/workflows/android.yml`) runs the tests, builds the APKs and runs lint. Each run's `vitals-debug` artifact has the debug APK, and `vitals-release` has the release APK once signing is set up. On `claude/**` branches, the Screenshots workflow re-renders the screenshots and commits any that changed, along with the exported database schema in `app/schemas`.
+
+### Signing
+
+An update only installs over the old app, and keeps its data, when both are signed with the same key. CI signs every debug and release APK with one key, stored in two repository secrets (Settings › Secrets and variables › Actions):
+
+- `VITALS_KEYSTORE_BASE64`: the PKCS12 keystore, base64-encoded (`base64 -w0 vitals-signing.p12`)
+- `VITALS_KEYSTORE_PASSWORD`: its password, which is also the key's (alias `vitals`)
+
+Each CI build's version code is its run number, so a newer build always installs as an update. Keep a copy of the keystore and password somewhere safe: an APK signed with any other key has to replace the app instead of updating it. Without the secrets, for example on a fork or a local build, the default debug key is used.
 
 ### Layout
 

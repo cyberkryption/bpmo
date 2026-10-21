@@ -8,6 +8,13 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Android only installs an update over the old app, keeping its readings, when both are signed
+// with the same key and the new versionCode isn't lower. CI decodes the shared key from the
+// repository secrets into VITALS_KEYSTORE and numbers each build with VITALS_BUILD_NUMBER; local
+// builds and forks without the secrets fall back to the default debug key and versionCode 1.
+val sharedKeystore = providers.environmentVariable("VITALS_KEYSTORE").orNull?.let(::file)?.takeIf { it.isFile }
+val buildNumber = providers.environmentVariable("VITALS_BUILD_NUMBER").orNull?.toIntOrNull()
+
 android {
     namespace = "com.cyberkryption.vitals"
     compileSdk = 35
@@ -16,14 +23,32 @@ android {
         applicationId = "com.cyberkryption.vitals"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = buildNumber ?: 1
+        versionName = if (buildNumber != null) "1.0.$buildNumber" else "1.0"
+    }
+
+    signingConfigs {
+        if (sharedKeystore != null) {
+            create("shared") {
+                val password = providers.environmentVariable("VITALS_KEYSTORE_PASSWORD").orNull
+                    ?: error("VITALS_KEYSTORE is set but VITALS_KEYSTORE_PASSWORD isn't")
+                storeFile = sharedKeystore
+                storePassword = password
+                keyAlias = "vitals"
+                keyPassword = password
+            }
+        }
     }
 
     buildTypes {
+        val shared = signingConfigs.findByName("shared")
+        debug {
+            if (shared != null) signingConfig = shared
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = shared
         }
     }
 

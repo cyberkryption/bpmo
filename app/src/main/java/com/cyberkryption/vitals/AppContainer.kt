@@ -1,6 +1,7 @@
 package com.cyberkryption.vitals
 
 import android.content.Context
+import com.cyberkryption.vitals.data.BackupManager
 import com.cyberkryption.vitals.data.PhotoStore
 import com.cyberkryption.vitals.data.ReadingRepository
 import com.cyberkryption.vitals.data.SettingsRepository
@@ -30,6 +31,7 @@ class AppContainer(context: Context, val clock: Clock = Clock.systemDefaultZone(
     val exif = ExifReader(appContext)
     val reviewSessions = ReviewSessions()
     val exporter = Exporter(appContext, readings)
+    val backup = BackupManager(appContext, readings, photos, clock)
     val canAuthenticate: () -> Boolean = { Biometrics.canAuthenticate(appContext) }
     val appLock = AppLock(settings, applicationScope, canAuthenticate)
 }

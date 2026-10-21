@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.util.UUID
 
 /** Source photos live in app-private storage and are shared out by content URI. */
@@ -27,7 +28,29 @@ class PhotoStore(private val context: Context) {
     }
 
     suspend fun delete(uri: String) {
-        withContext(Dispatchers.IO) { fileFor(uri)?.delete() }
+        withContext(Dispatchers.IO) { discard(uri) }
+    }
+
+    fun has(uri: String): Boolean = fileFor(uri)?.isFile == true
+
+    /** Blocking; call off the main thread. */
+    fun open(uri: String): InputStream? = fileFor(uri)?.takeIf { it.isFile }?.inputStream()
+
+    /** Saves a photo from a backup into private storage and returns its URI. Blocking. */
+    fun saveRestored(input: InputStream): String {
+        val file = newFile()
+        try {
+            file.outputStream().use { input.copyTo(it) }
+        } catch (e: Exception) {
+            file.delete()
+            throw e
+        }
+        return uriFor(file).toString()
+    }
+
+    /** Blocking; call off the main thread. */
+    fun discard(uri: String) {
+        fileFor(uri)?.delete()
     }
 
     fun fileName(uri: String): String? = Uri.parse(uri).lastPathSegment
