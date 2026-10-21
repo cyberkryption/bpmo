@@ -141,7 +141,7 @@ private fun DetailBody(reading: Reading) {
                 unit = stringResource(if (reading.type == ReadingType.BP) R.string.unit_mmhg else R.string.unit_percent),
                 valueStyle = VitalsType.detailValue,
             )
-            StatusBadge(reading.status, long = true)
+            StatusBadge(reading.status(Vitals.guideline), long = true)
             Row(
                 Modifier
                     .fillMaxWidth()

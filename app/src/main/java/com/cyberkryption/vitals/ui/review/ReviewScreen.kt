@@ -59,6 +59,7 @@ import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.core.DateSource
 import com.cyberkryption.vitals.core.Field
 import com.cyberkryption.vitals.core.FieldError
+import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.NoteChips
 import com.cyberkryption.vitals.core.ReadingType
 import com.cyberkryption.vitals.core.ReviewForm
@@ -95,6 +96,7 @@ fun ReviewScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val finished by viewModel.finished.collectAsStateWithLifecycle()
     val c = Vitals.colors
+    val guideline = Vitals.guideline
 
     LaunchedEffect(finished) { if (finished) onDone() }
     BackHandler { viewModel.discard() }
@@ -139,7 +141,7 @@ fun ReviewScreen(
             )
             ValueFields(form, viewModel::setInput)
             Warnings(form, isEdit = s.isEdit, hadOcr = s.ocr?.boxes?.isNotEmpty() == true)
-            form.status?.let { status ->
+            form.status(guideline)?.let { status ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(stringResource(R.string.review_category), style = VitalsType.label, color = c.muted)
                     StatusBadge(status, long = true)
@@ -163,7 +165,7 @@ fun ReviewScreen(
             )
             PrimaryButton(
                 text = stringResource(if (s.isLast) R.string.action_save else R.string.action_save_next),
-                onClick = viewModel::save,
+                onClick = { viewModel.save(guideline) },
                 icon = R.drawable.ic_check,
                 enabled = s.form?.canSave == true && !s.saving,
                 modifier = Modifier.weight(1f),
@@ -184,7 +186,7 @@ fun ReviewScreen(
 
     if (s.showCrisisAdvice) {
         VitalsDialog(
-            title = stringResource(R.string.crisis_title),
+            title = stringResource(if (guideline == Guideline.NICE) R.string.severe_title else R.string.crisis_title),
             onDismissRequest = {},
             confirmText = stringResource(R.string.crisis_save),
             onConfirm = { viewModel.answerCrisisAdvice(save = true) },

@@ -15,6 +15,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.cyberkryption.vitals.R
+import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.Status
 import com.cyberkryption.vitals.ui.theme.ToneColors
 import com.cyberkryption.vitals.ui.theme.Vitals
@@ -28,6 +29,7 @@ fun Status.shortLabel(): Int = when (this) {
     Status.STAGE1 -> R.string.status_stage1
     Status.STAGE2 -> R.string.status_stage2
     Status.CRISIS -> R.string.status_crisis
+    Status.SEVERE -> R.string.status_severe
     Status.SPO2_NORMAL -> R.string.status_normal
     Status.SPO2_LOW -> R.string.status_spo2_low
     Status.SPO2_VERY_LOW -> R.string.status_spo2_very_low
@@ -40,9 +42,31 @@ fun Status.longLabel(): Int = when (this) {
     Status.STAGE1 -> R.string.status_stage1_long
     Status.STAGE2 -> R.string.status_stage2_long
     Status.CRISIS -> R.string.status_crisis_long
+    Status.SEVERE -> R.string.status_severe_long
     Status.SPO2_NORMAL -> R.string.status_spo2_normal_long
     Status.SPO2_LOW -> R.string.status_spo2_low_long
     Status.SPO2_VERY_LOW -> R.string.status_spo2_very_low_long
+}
+
+/** The guidance's short name, as on its Settings choice. */
+@StringRes
+fun Guideline.label(): Int = when (this) {
+    Guideline.AHA -> R.string.guideline_aha
+    Guideline.NICE -> R.string.guideline_nice
+}
+
+/** Where its categories start, in a sentence. */
+@StringRes
+fun Guideline.thresholds(): Int = when (this) {
+    Guideline.AHA -> R.string.guideline_aha_thresholds
+    Guideline.NICE -> R.string.guideline_nice_thresholds
+}
+
+/** What the categories follow, to complete "Categories follow …". */
+@StringRes
+fun Guideline.source(): Int = when (this) {
+    Guideline.AHA -> R.string.guideline_aha_source
+    Guideline.NICE -> R.string.guideline_nice_source
 }
 
 /** The category, always named in words on a tinted pill. */

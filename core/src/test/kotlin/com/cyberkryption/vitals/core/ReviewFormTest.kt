@@ -23,7 +23,7 @@ class ReviewFormTest {
         val form = ReviewForm.from(parsed, takenAt, DateSource.EXIF)
         assertEquals("127", form.input(Field.SYSTOLIC))
         assertEquals(listOf(Field.DIASTOLIC), form.fieldsToCheck)
-        assertEquals(Status.STAGE1, form.status)
+        assertEquals(Status.STAGE1, form.status(Guideline.AHA))
         assertTrue(form.canSave)
     }
 
@@ -32,7 +32,7 @@ class ReviewFormTest {
         val form = ReviewForm.from(parsed, takenAt, DateSource.EXIF).withInput(Field.DIASTOLIC, "78")
         assertTrue(form.fieldsToCheck.isEmpty())
         assertTrue(form.isChanged(Field.DIASTOLIC))
-        assertEquals(Status.ELEVATED, form.status)
+        assertEquals(Status.ELEVATED, form.status(Guideline.AHA))
         assertEquals(setOf(Field.DIASTOLIC), form.editedFields)
     }
 
@@ -40,7 +40,7 @@ class ReviewFormTest {
     fun invalidValuesBlockSave() {
         val form = ReviewForm.from(parsed, takenAt, DateSource.EXIF).withInput(Field.DIASTOLIC, "130")
         assertFalse(form.canSave)
-        assertNull(form.status)
+        assertNull(form.status(Guideline.AHA))
         assertEquals(FieldError.NOT_BELOW_SYSTOLIC, form.errors[Field.DIASTOLIC])
     }
 
@@ -65,7 +65,7 @@ class ReviewFormTest {
         assertEquals(listOf(Field.SPO2, Field.PULSE), form.fields)
         assertEquals("97", form.input(Field.SPO2))
         assertEquals("71", form.input(Field.PULSE))
-        assertEquals(Status.SPO2_NORMAL, form.status)
+        assertEquals(Status.SPO2_NORMAL, form.status(Guideline.AHA))
     }
 
     @Test

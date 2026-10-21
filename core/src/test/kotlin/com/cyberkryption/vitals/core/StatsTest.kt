@@ -4,6 +4,7 @@ import java.time.LocalDate
 import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.assertNull
 
 class StatsTest {
@@ -13,7 +14,7 @@ class StatsTest {
         val bp = summary.bloodPressure!!
         assertEquals(126, bp.systolic.average)
         assertEquals(79, bp.diastolic.average)
-        assertEquals(Status.ELEVATED, bp.status)
+        assertEquals(Status.ELEVATED, bp.status(Guideline.AHA))
         assertEquals(7, bp.count)
         assertEquals(119, bp.systolic.min)
         assertEquals(134, bp.systolic.max)
@@ -39,8 +40,12 @@ class StatsTest {
 
     @Test
     fun categoryCountsInSeverityOrder() {
-        val counts = categoryCounts(Samples.week)
+        val counts = categoryCounts(Samples.week, Guideline.AHA)
         assertEquals(listOf(Status.NORMAL to 1, Status.ELEVATED to 3, Status.STAGE1 to 3), counts)
+        // NICE's home thresholds put the same week's readings lower.
+        val nice = categoryCounts(Samples.week, Guideline.NICE)
+        assertEquals(counts.sumOf { it.second }, nice.sumOf { it.second })
+        assertTrue(nice.none { it.first == Status.ELEVATED })
     }
 
     @Test
@@ -66,7 +71,7 @@ class StatsTest {
         assertEquals(129, last.systolic)
         assertEquals(82, last.diastolic)
         assertEquals(97, last.spo2)
-        assertEquals(Status.STAGE1, last.status)
+        assertEquals(Status.STAGE1, last.status(Guideline.AHA))
         val empty = Daily.points(emptyList(), Period.of(Span.WEEK, 0, Samples.today), Samples.zone)
         assertNull(empty.first().systolic)
     }

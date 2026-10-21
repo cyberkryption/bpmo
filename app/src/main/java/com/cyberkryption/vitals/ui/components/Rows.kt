@@ -59,7 +59,7 @@ fun ReadingRow(
             // The category sits beside the time so the values below get the full width.
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(title, style = VitalsType.rowTitle, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                StatusBadge(reading.status, small = true)
+                StatusBadge(reading.status(Vitals.guideline), small = true)
             }
             Text(
                 "${reading.valueText()} ${reading.unitText()}",

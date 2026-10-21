@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 class CsvTest {
     @Test
     fun writesHeaderAndRowsOldestFirst() {
-        val csv = Csv.readings(Samples.week.take(2), Samples.zone) { it.name }
+        val csv = Csv.readings(Samples.week.take(2), Samples.zone, Guideline.AHA) { it.name }
         val lines = csv.trimEnd().split("\r\n")
         assertEquals("taken_at,type,systolic,diastolic,pulse,spo2,category,note,date_source", lines[0])
         assertEquals("2026-10-14T07:52:00+01:00,OXIMETER,,,74,97,SPO2_NORMAL,,EXIF", lines[1])

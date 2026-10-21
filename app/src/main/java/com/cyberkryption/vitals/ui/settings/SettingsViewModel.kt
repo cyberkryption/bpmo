@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.data.AppSettings
 import com.cyberkryption.vitals.data.BackupException
 import com.cyberkryption.vitals.data.BackupManager
@@ -70,6 +71,10 @@ class SettingsViewModel(
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { settings.setThemeMode(mode) }
+    }
+
+    fun setGuideline(guideline: Guideline) {
+        viewModelScope.launch { settings.setGuideline(guideline) }
     }
 
     private val _backupStatus = MutableStateFlow<BackupStatus?>(null)

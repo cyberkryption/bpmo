@@ -33,14 +33,13 @@ data class ReviewForm(
     }
 
     /** Live category for the tag; null while any value is missing or invalid. */
-    val status: Status?
-        get() {
-            if (errors.isNotEmpty()) return null
-            return when (type) {
-                ReadingType.BP -> Classify.bloodPressure(value(Field.SYSTOLIC)!!, value(Field.DIASTOLIC)!!)
-                ReadingType.OXIMETER -> Classify.spo2(value(Field.SPO2)!!)
-            }
+    fun status(guideline: Guideline): Status? {
+        if (errors.isNotEmpty()) return null
+        return when (type) {
+            ReadingType.BP -> Classify.bloodPressure(value(Field.SYSTOLIC)!!, value(Field.DIASTOLIC)!!, guideline)
+            ReadingType.OXIMETER -> Classify.spo2(value(Field.SPO2)!!)
         }
+    }
 
     val canSave: Boolean get() = errors.isEmpty() && takenAt != null && takenAtSource != null
 

@@ -204,7 +204,7 @@ private fun BloodPressureCard(summary: VitalsSummary, span: Span, onOpen: () -> 
             modifier = Modifier.clearAndSetSemantics { contentDescription = spoken },
         )
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatusBadge(bp.status)
+            StatusBadge(bp.status(Vitals.guideline))
             Text(pluralStringResource(R.plurals.dashboard_readings, bp.count, bp.count), style = VitalsType.metaNumbers, color = c.muted)
         }
         Row(

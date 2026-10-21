@@ -10,6 +10,7 @@ import android.text.TextPaint
 import android.text.TextUtils
 import androidx.core.content.res.ResourcesCompat
 import com.cyberkryption.vitals.R
+import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.Period
 import com.cyberkryption.vitals.core.PeriodFormat
 import com.cyberkryption.vitals.core.Reading
@@ -18,6 +19,7 @@ import com.cyberkryption.vitals.core.VitalsSummary
 import com.cyberkryption.vitals.core.categoryCounts
 import com.cyberkryption.vitals.core.status
 import com.cyberkryption.vitals.ui.components.shortLabel
+import com.cyberkryption.vitals.ui.components.source
 import java.io.File
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -48,7 +50,7 @@ class PdfReport(private val context: Context, private val zone: ZoneId) {
     private val mutedPaint = paint(body, 8f, muted)
     private val rulePaint = Paint().apply { color = rule; strokeWidth = 0.75f }
 
-    fun write(file: File, period: Period, readings: List<Reading>) {
+    fun write(file: File, period: Period, readings: List<Reading>, guideline: Guideline) {
         val doc = PdfDocument()
         var pageNumber = 0
         lateinit var page: PdfDocument.Page
@@ -96,7 +98,7 @@ class PdfReport(private val context: Context, private val zone: ZoneId) {
             y += 14f
         }
 
-        val counts = categoryCounts(readings)
+        val counts = categoryCounts(readings, guideline)
         if (counts.isNotEmpty()) {
             y += 8f
             canvas.drawText(context.getString(R.string.trends_categories), MARGIN, y, sectionPaint)
@@ -132,7 +134,7 @@ class PdfReport(private val context: Context, private val zone: ZoneId) {
                 ReadingType.OXIMETER -> "${r.spo2}%"
             }
             val note = TextUtils.ellipsize(r.note.orEmpty(), textPaint, noteWidth, TextUtils.TruncateAt.END).toString()
-            val cells = listOf(dateFormat.format(at), timeFormat.format(at), value, r.pulse.toString(), context.getString(r.status.shortLabel()), note)
+            val cells = listOf(dateFormat.format(at), timeFormat.format(at), value, r.pulse.toString(), context.getString(r.status(guideline).shortLabel()), note)
             drawRow(canvas, y, readingColumns, cells, textPaint)
             y += 6f
             canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, rulePaint)
@@ -141,7 +143,7 @@ class PdfReport(private val context: Context, private val zone: ZoneId) {
 
         ensure(24f)
         y += 10f
-        canvas.drawText(context.getString(R.string.pdf_footer), MARGIN, y, mutedPaint)
+        canvas.drawText(context.getString(R.string.pdf_footer, context.getString(guideline.source())), MARGIN, y, mutedPaint)
         doc.finishPage(page)
         file.outputStream().use { doc.writeTo(it) }
         doc.close()

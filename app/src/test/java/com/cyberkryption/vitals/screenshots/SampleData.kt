@@ -10,6 +10,7 @@ import android.net.Uri
 import com.cyberkryption.vitals.AppContainer
 import com.cyberkryption.vitals.core.DateSource
 import com.cyberkryption.vitals.core.Field
+import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.Reading
 import com.cyberkryption.vitals.core.ReadingType
 import java.io.File
@@ -53,6 +54,8 @@ object SampleData {
         container.readings.all().forEach { container.readings.delete(it) }
         // The one-time lock offer would otherwise cover the dashboard.
         container.settings.markLockOffered()
+        // The same categories whatever region the machine rendering them is set to.
+        container.settings.setGuideline(Guideline.AHA)
         photoDir.mkdirs()
 
         val random = Random(7)

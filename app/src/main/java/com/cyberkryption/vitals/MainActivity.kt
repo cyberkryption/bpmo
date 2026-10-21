@@ -23,6 +23,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.cyberkryption.vitals.data.RelockTimeout
 import com.cyberkryption.vitals.data.ThemeMode
+import com.cyberkryption.vitals.data.defaultGuideline
 import com.cyberkryption.vitals.security.LockState
 import com.cyberkryption.vitals.ui.VitalsApp
 import com.cyberkryption.vitals.ui.lock.LockScreen
@@ -85,7 +86,11 @@ private fun VitalsRoot(container: AppContainer, onDarkThemeChange: (Boolean) -> 
     val dark = (settings?.themeMode ?: ThemeMode.SYSTEM).isDark(isSystemInDarkTheme())
     LaunchedEffect(dark) { onDarkThemeChange(dark) }
 
-    VitalsTheme(darkTheme = dark, categoryColors = settings?.categoryColors ?: true) {
+    VitalsTheme(
+        darkTheme = dark,
+        categoryColors = settings?.categoryColors ?: true,
+        guideline = settings?.guideline ?: defaultGuideline(),
+    ) {
         Box(Modifier.fillMaxSize().background(Vitals.colors.bg)) {
             when (lock) {
                 LockState.Checking -> Unit

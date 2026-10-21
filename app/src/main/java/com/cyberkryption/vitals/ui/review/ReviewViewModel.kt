@@ -11,9 +11,9 @@ import androidx.navigation.toRoute
 import com.cyberkryption.vitals.core.DateSource
 import com.cyberkryption.vitals.core.DisplayParser
 import com.cyberkryption.vitals.core.Field
+import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.ReadingType
 import com.cyberkryption.vitals.core.ReviewForm
-import com.cyberkryption.vitals.core.Status
 import com.cyberkryption.vitals.data.PhotoStore
 import com.cyberkryption.vitals.data.ReadingRepository
 import com.cyberkryption.vitals.extraction.OcrResult
@@ -118,11 +118,12 @@ class ReviewViewModel(
 
     fun setTakenAt(instant: Instant) = updateForm { it.withTakenAt(instant, DateSource.MANUAL) }
 
-    fun save() {
+    /** [guideline] is the one the screen shows categories under, so the warning matches the tag. */
+    fun save(guideline: Guideline) {
         val s = _state.value ?: return
         val form = s.form ?: return
         if (!form.canSave || s.saving) return
-        if (form.status == Status.CRISIS) {
+        if (form.status(guideline)?.isUrgent == true) {
             _state.update { it?.copy(showCrisisAdvice = true) }
         } else {
             persist()

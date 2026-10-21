@@ -8,10 +8,12 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.cyberkryption.vitals.core.Guideline
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import java.util.Locale
 
 enum class RelockTimeout(val millis: Long) { IMMEDIATELY(0), ONE_MINUTE(60_000), FIVE_MINUTES(300_000) }
 
@@ -36,7 +38,11 @@ data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     /** The lock is offered once, after the first saved reading. */
     val lockOffered: Boolean = false,
+    val guideline: Guideline = defaultGuideline(),
 )
+
+/** Until one is chosen, NICE on a phone set to the UK and AHA elsewhere. */
+fun defaultGuideline(): Guideline = Guideline.forRegion(Locale.getDefault().country)
 
 val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -51,6 +57,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
                 categoryColors = prefs[CATEGORY_COLORS] ?: true,
                 themeMode = prefs[THEME_MODE]?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } } ?: ThemeMode.SYSTEM,
                 lockOffered = prefs[LOCK_OFFERED] ?: false,
+                guideline = prefs[GUIDELINE]?.let { name -> Guideline.entries.firstOrNull { it.name == name } } ?: defaultGuideline(),
             )
         }
 
@@ -70,6 +77,10 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[THEME_MODE] = mode.name }
     }
 
+    suspend fun setGuideline(guideline: Guideline) {
+        dataStore.edit { it[GUIDELINE] = guideline.name }
+    }
+
     suspend fun markLockOffered() {
         dataStore.edit { it[LOCK_OFFERED] = true }
     }
@@ -80,5 +91,6 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val CATEGORY_COLORS = booleanPreferencesKey("category_colors")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val LOCK_OFFERED = booleanPreferencesKey("lock_offered")
+        val GUIDELINE = stringPreferencesKey("bp_guideline")
     }
 }
