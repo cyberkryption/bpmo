@@ -264,14 +264,16 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
                     .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                     .build()
             }
-            val height = max(ROW_H, (noteLayout?.height ?: 0) + 2 * ROW_PAD)
+            // Every cell's first line shares one baseline; a note wraps below its own.
+            val noteTop = noteLayout?.let { ROW_BASELINE - it.getLineBaseline(0) } ?: 0f
+            val height = max(ROW_H, noteTop + (noteLayout?.height ?: 0) + ROW_PAD)
             val values = cells(r)
             blocks += Block(height, repeat = continued) { c, top ->
                 if (index % 2 == 1) {
                     fill.color = zebra
                     c.drawRect(LEFT, top, LEFT + CONTENT_W, top + height, fill)
                 }
-                val baseline = top + ROW_PAD + (noteLayout?.getLineBaseline(0)?.toFloat() ?: 9.5f)
+                val baseline = top + ROW_BASELINE
                 values.forEachIndexed { i, value ->
                     val col = columns[i]
                     if (col.right) {
@@ -282,7 +284,7 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
                 }
                 noteLayout?.let {
                     c.save()
-                    c.translate(LEFT + notes.x0, top + ROW_PAD)
+                    c.translate(LEFT + notes.x0, top + noteTop)
                     it.draw(c)
                     c.restore()
                 }
@@ -460,7 +462,7 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
         }
     }
 
-    private fun summaryBlock(rows: List<Pair<Int, Summary?>>) = card(44f + rows.size * 22f) { c, area ->
+    private fun summaryBlock(rows: List<Pair<Int, Summary?>>) = card(2 * CARD_PAD + 42f + rows.size * 22f) { c, area ->
         c.drawText(context.getString(R.string.trends_summary), area.left, area.top + 12f, cardTitlePaint)
         val columns = listOf(R.string.summary_avg, R.string.summary_min, R.string.summary_max)
         val colRight = listOf(area.left + 260f, area.left + 340f, area.left + 420f)
@@ -572,8 +574,11 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
         const val SECTION_HEAD = 30f
         const val CONTINUED_HEAD = 22f
         const val TABLE_HEAD = 30f
-        const val ROW_H = 20f
-        const val ROW_PAD = 5f
+        const val ROW_H = 21f
+        const val ROW_PAD = 4f
+
+        /** Where a row's text sits, from the row's top. */
+        const val ROW_BASELINE = 14f
         const val CELL_PAD = 8f
         const val CARD_PAD = 14f
         const val CARD_GAP = 12f
