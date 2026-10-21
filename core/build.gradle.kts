@@ -18,3 +18,9 @@ kotlin {
 dependencies {
     testImplementation(libs.kotlin.test.junit)
 }
+
+tasks.test {
+    // ./gradlew :core:test -PdisplayPhotos=/path/to/folder also checks the display reader against
+    // photos kept out of the repository; see SevenSegmentReaderTest.readsRealPhotos.
+    providers.gradleProperty("displayPhotos").orNull?.let { systemProperty("displayPhotos", it) }
+}

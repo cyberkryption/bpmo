@@ -28,11 +28,21 @@ It's built in Kotlin with Jetpack Compose and Material 3: rounded cards, a sage-
 
 ### Adding a reading
 
-**Scan** opens the camera, which always uses a dark screen. Choose BP monitor or Oximeter and fit the display inside the frame. Once the display is found, the values show up live, and auto-capture takes the photo when they've held steady for about a second.
+**Scan** opens the camera, which always uses a dark screen. Choose BP monitor or Oximeter and fit the display inside the frame; only what's inside it is read. The values show up once several frames in a row read the same, and auto-capture takes the photo when they've held for about a second. If the photo itself reads less clearly than the live view did, Review starts from the live values.
 
 **Import** opens the Android Photo Picker for one or more past photos. They appear in a grid with the time each was taken, read from the photo's EXIF data. A photo with no date is flagged, and you set its date during review.
 
 **Review** shows every reading before it's saved. Boxes on the photo mark where each value was read. Any value the app wasn't sure of gets an orange border and a "check" note, and values outside a plausible range block saving. The category updates as you edit. You can change the date and time, and add a note, with quick chips such as "Before meds" or "Left arm". A reading in the hypertensive-crisis range shows advice on what to do before it's saved.
+
+**How the display is read.** Most monitors show seven-segment digits, made of separate bars, which general text recognition often misses or misreads. So Vitals reads them itself, on the phone:
+
+1. Find the display: the biggest bright, solid patch in the photo.
+2. Straighten it, correcting for a phone held at an angle, and enlarge it to a fixed size.
+3. Even out the lighting, then separate the dark segments from the background.
+4. Split the display into rows of digits, ignoring icons, the clock and level bars.
+5. Read each digit from which of its seven segments are dark, and how clearly.
+
+The numbers then go to SYS, DIA and pulse, or SpO₂ and pulse, top to bottom, and a digit whose segments weren't clear gets the "check" note. If that misses a value or is unsure of one, ML Kit text recognition reads the photo too, and the fuller result is used.
 
 <table>
   <tr>
@@ -82,10 +92,13 @@ You need JDK 17 or newer and the Android SDK (platform 35).
 
 ```sh
 ./gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
-./gradlew :core:test           # domain logic: categories, validation, averages, OCR parsing, EXIF dates
+./gradlew :core:test           # domain logic: categories, validation, averages, display reading, EXIF dates
+./gradlew :core:test -PdisplayPhotos=/path/to/photos   # also checks the display reader against your own photos
 ./gradlew :app:testDebugUnitTest
 ./gradlew :app:testDebugUnitTest -Pscreenshots   # re-renders docs/screenshots with Robolectric
 ```
+
+The display reader is tested against drawn monitor displays, including tilted, small, dim, blurred and heavily compressed versions. To check it against real photos without adding them to the repository, put them in a folder, upright, named after what they show: `bp-154-100-76.jpg` for SYS, DIA and pulse, or `ox-97-68.jpg` for SpO₂ and pulse (anything after the values is ignored). Photos in `core/src/test/resources/displays/` are checked on every build.
 
 On every push, GitHub Actions (`.github/workflows/android.yml`) runs the tests, builds the APKs and runs lint. Each run's `vitals-debug` artifact has the debug APK, and `vitals-release` has the release APK once signing is set up. On `claude/**` branches, the Screenshots workflow re-renders the screenshots and commits any that changed, along with the exported database schema in `app/schemas`.
 
@@ -100,10 +113,10 @@ Each CI build's version code is its run number, so a newer build always installs
 
 ### Layout
 
-- `core/`: plain Kotlin with no Android dependencies, holding the AHA category rules, validation, averages, trend periods, the display parser, EXIF date parsing, Review form state and CSV export. It's unit-tested on the JVM.
+- `core/`: plain Kotlin with no Android dependencies, holding the AHA category rules, validation, averages, trend periods, the seven-segment display reader and parser, EXIF date parsing, Review form state and CSV export. It's unit-tested on the JVM.
 - `app/`: the Android app.
   - `data/`: Room and DataStore.
-  - `extraction/`: ML Kit and EXIF.
+  - `extraction/`: reading photos and live camera frames (with ML Kit as the fallback), and EXIF.
   - `security/`: the app lock.
   - `export/`: CSV and PDF.
   - `ui/`: one package per screen.

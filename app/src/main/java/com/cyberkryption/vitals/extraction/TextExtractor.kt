@@ -7,6 +7,10 @@ import android.graphics.Matrix
 import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
 import com.cyberkryption.vitals.core.Box
+import com.cyberkryption.vitals.core.DisplayParser
+import com.cyberkryption.vitals.core.GreyImage
+import com.cyberkryption.vitals.core.ReadingType
+import com.cyberkryption.vitals.core.SevenSegmentReader
 import com.cyberkryption.vitals.core.TextBox
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
@@ -19,14 +23,20 @@ import kotlinx.coroutines.withContext
 /** OCR words and the upright image size their boxes are measured against. */
 data class OcrResult(val width: Int, val height: Int, val boxes: List<TextBox>)
 
-/** On-device ML Kit Text Recognition v2. */
+/**
+ * Reads a monitor photo: first as seven-segment digits, which most monitors show, then with ML Kit
+ * Text Recognition v2 when that misses a value or is unsure of one, keeping whichever read more.
+ */
 class TextExtractor(private val context: Context) {
     private val recognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
 
-    suspend fun recognize(uri: Uri): OcrResult? = withContext(Dispatchers.Default) {
+    /** [type] is the monitor type when known; otherwise each reading is judged as the type it looks like. */
+    suspend fun recognize(uri: Uri, type: ReadingType? = null): OcrResult? = withContext(Dispatchers.Default) {
         val bitmap = decodeUpright(uri, MAX_SIDE) ?: return@withContext null
-        val text = recognizer.process(InputImage.fromBitmap(bitmap, 0)).await()
-        OcrResult(bitmap.width, bitmap.height, text.toBoxes())
+        val segments = SevenSegmentReader.read(bitmap.toGreyImage())
+        if (DisplayParser.readsClearly(segments, type)) return@withContext OcrResult(bitmap.width, bitmap.height, segments)
+        val text = recognizer.process(InputImage.fromBitmap(bitmap, 0)).await().toBoxes()
+        OcrResult(bitmap.width, bitmap.height, DisplayParser.better(segments, text, type))
     }
 
     /** Decodes a downsampled bitmap, rotated per its EXIF orientation. */
@@ -60,4 +70,18 @@ fun Text.toBoxes(): List<TextBox> = textBlocks.flatMap { it.lines }.flatMap { li
             confidence = element.confidence,
         )
     }
+}
+
+fun Bitmap.toGreyImage(): GreyImage {
+    val argb = IntArray(width * height)
+    getPixels(argb, 0, width, 0, 0, width, height)
+    return GreyImage.fromArgb(argb, width, height)
+}
+
+fun GreyImage.toBitmap(): Bitmap {
+    val argb = IntArray(width * height) {
+        val v = pixels[it].toInt() and 0xFF
+        (0xFF shl 24) or (v shl 16) or (v shl 8) or v
+    }
+    return Bitmap.createBitmap(argb, width, height, Bitmap.Config.ARGB_8888)
 }
