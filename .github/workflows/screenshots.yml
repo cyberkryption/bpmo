@@ -1,7 +1,8 @@
 name: Screenshots
 
 # Renders the app's screens with Robolectric into docs/screenshots and commits any that
-# changed back to the branch, so the README always shows the current UI.
+# changed back to the branch, so the README always shows the current UI. The same build
+# exports the Room schema to app/schemas, which future database migrations are written from.
 on:
   push:
     branches: ["claude/**"]
@@ -36,18 +37,19 @@ jobs:
       - name: Render screenshots
         run: ./gradlew :app:testDebugUnitTest -Pscreenshots --stacktrace
 
-      - name: Commit changed screenshots
+      - name: Commit changed screenshots and schema
         # Keep whatever rendered, even if a screen failed, so it can be looked at.
         if: always() && github.ref != 'refs/heads/main'
         run: |
           git add docs/screenshots
+          if [ -d app/schemas ]; then git add app/schemas; fi
           if git diff --cached --quiet; then
-            echo "Screenshots unchanged."
+            echo "Screenshots and schema unchanged."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Update screenshots"
+          git commit -m "Update screenshots and database schema"
           for attempt in 1 2 3; do
             git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
             sleep 5

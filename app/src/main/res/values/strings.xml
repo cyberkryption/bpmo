@@ -266,6 +266,36 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_category_colors">Category colours</string>
     <string name="settings_category_colors_detail">Colour readings by blood pressure category. Off shows neutral tags.</string>
+    <string name="settings_data">Your data</string>
+    <string name="settings_data_note">Readings stay on this phone and are kept when Vitals updates. A backup file keeps them if you uninstall the app or change phones.</string>
+    <string name="backup_title">Back up readings</string>
+    <string name="backup_detail">Save every reading and its photo to one file. It isn\'t encrypted, so keep it somewhere private.</string>
+    <string name="restore_title">Restore from a backup</string>
+    <string name="restore_detail">Add the readings from a Vitals backup. Readings already here are kept.</string>
+    <string name="backup_working">Backing up…</string>
+    <string name="restore_working">Restoring…</string>
+    <string name="backup_saved_title">Backup saved</string>
+    <plurals name="backup_saved_body">
+        <item quantity="one">%d reading and its photo are in the file.</item>
+        <item quantity="other">%d readings and their photos are in the file.</item>
+    </plurals>
+    <string name="restore_done_title">Backup restored</string>
+    <plurals name="restore_added">
+        <item quantity="one">Added %d reading.</item>
+        <item quantity="other">Added %d readings.</item>
+    </plurals>
+    <plurals name="restore_skipped">
+        <item quantity="one">%d was already in Vitals.</item>
+        <item quantity="other">%d were already in Vitals.</item>
+    </plurals>
+    <string name="backup_failed_title">Couldn\'t back up</string>
+    <string name="restore_failed_title">Couldn\'t restore</string>
+    <string name="backup_problem_not_a_backup">That file isn\'t a Vitals backup.</string>
+    <string name="backup_problem_newer">This backup is from a newer version of Vitals. Update the app, then try again.</string>
+    <string name="backup_problem_damaged">The backup is damaged and couldn\'t be read. Nothing was changed.</string>
+    <string name="backup_problem_cant_save">The file couldn\'t be written. Try another location.</string>
+    <string name="backup_problem_cant_read">The file couldn\'t be opened. Try choosing it again.</string>
+    <string name="action_ok">OK</string>
     <string name="settings_about">About</string>
     <string name="settings_about_body">Categories follow AHA guidelines for adults. Vitals is not a medical device; talk to your doctor about your readings.</string>
     <string name="settings_version">Version %1$s</string>
