@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cyberkryption.vitals.core.DateSource
 import com.cyberkryption.vitals.core.DisplayParser
 import com.cyberkryption.vitals.core.Field
+import com.cyberkryption.vitals.core.FrameVotes
 import com.cyberkryption.vitals.core.ParsedDisplay
 import com.cyberkryption.vitals.core.ReadingType
 import com.cyberkryption.vitals.core.TextBox
@@ -28,7 +29,7 @@ import java.time.Instant
 
 data class CaptureUiState(
     val mode: ReadingType = ReadingType.BP,
-    /** Values read from the live preview, once the display is found. */
+    /** Values that recent preview frames agree on, once the display is found. */
     val detected: ParsedDisplay? = null,
     val autoCapture: Boolean = true,
     val torch: Boolean = false,
@@ -50,12 +51,14 @@ class CaptureViewModel(
     /** Fires when a complete set of values has held steady long enough to auto-capture. */
     val autoCaptureRequests: Flow<Unit> = autoShots.receiveAsFlow()
 
-    private var lastValues: Map<Field, Int>? = null
+    private val votes = FrameVotes()
+    private var agreed: Map<Field, Int>? = null
     private var stableSince = 0L
 
     fun setMode(mode: ReadingType) {
         _state.value = _state.value.copy(mode = mode, detected = null)
-        lastValues = null
+        votes.clear()
+        agreed = null
     }
 
     fun toggleAuto() {
@@ -66,20 +69,27 @@ class CaptureViewModel(
         _state.value = _state.value.copy(torch = !_state.value.torch)
     }
 
-    /** Called for each analysed preview frame. */
+    /**
+     * Called for each analysed preview frame. Values show, and auto-capture can fire, only once
+     * several recent frames read the same; then they must hold for [STABLE_MS].
+     */
     fun onFrame(boxes: List<TextBox>) {
         val s = _state.value
         if (s.capturing) return
         val parsed = DisplayParser.parse(boxes, s.mode)
         val complete = parsed.detections.keys.containsAll(s.mode.fields)
-        _state.value = s.copy(detected = parsed.takeIf { complete })
-        val values = parsed.detections.mapValues { it.value.value }
-        if (!complete || values != lastValues) {
-            lastValues = values.takeIf { complete }
+        val values = parsed.detections.mapValues { it.value.value }.takeIf { complete }
+        val nowAgreed = votes.add(values)
+        if (nowAgreed != agreed) {
+            agreed = nowAgreed
             stableSince = now()
-            return
         }
-        if (s.autoCapture && now() - stableSince >= STABLE_MS) autoShots.trySend(Unit)
+        when {
+            nowAgreed == null -> _state.value = s.copy(detected = null)
+            // Keeps the frame's confidences, but drops its boxes: they're in preview coordinates.
+            values == nowAgreed -> _state.value = s.copy(detected = parsed.withoutBounds())
+        }
+        if (nowAgreed != null && s.autoCapture && now() - stableSince >= STABLE_MS) autoShots.trySend(Unit)
     }
 
     fun newPhotoFile(): File {
@@ -89,8 +99,9 @@ class CaptureViewModel(
 
     fun onCaptureFailed(file: File) {
         file.delete()
-        lastValues = null
-        _state.value = _state.value.copy(capturing = false, failed = true)
+        votes.clear()
+        agreed = null
+        _state.value = _state.value.copy(capturing = false, failed = true, detected = null)
     }
 
     /** Queues the captured photo for review and returns the session id. */
@@ -101,6 +112,7 @@ class CaptureViewModel(
                 takenAt = Instant.now(clock),
                 dateSource = DateSource.CAPTURE,
                 typeHint = _state.value.mode,
+                live = _state.value.detected,
             ),
         ),
     )
@@ -113,3 +125,5 @@ class CaptureViewModel(
         }
     }
 }
+
+private fun ParsedDisplay.withoutBounds() = copy(detections = detections.mapValues { it.value.copy(bounds = null) })

@@ -85,15 +85,16 @@ class ReviewViewModel(
         viewModelScope.launch {
             // An unreadable photo still gets reviewed: the fields just start empty.
             val ocr = try {
-                extractor.recognize(item.photoUri)
+                extractor.recognize(item.photoUri, item.typeHint)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 null
             }
             val boxes = ocr?.boxes.orEmpty()
-            val parsed = DisplayParser.parse(boxes, item.typeHint ?: DisplayParser.guessType(boxes))
-            val form = ReviewForm.from(parsed, item.takenAt, item.dateSource)
+            val fromPhoto = DisplayParser.parse(boxes, item.typeHint ?: DisplayParser.guessType(boxes))
+            val live = item.live?.takeIf { it.type == fromPhoto.type && it.detections.size > fromPhoto.detections.size }
+            val form = ReviewForm.from(live ?: fromPhoto, item.takenAt, item.dateSource)
             _state.update { if (it?.index == index) it.copy(form = form, ocr = ocr) else it }
         }
     }

@@ -98,6 +98,61 @@ class DisplayParserTest {
     }
 
     @Test
+    fun markBesideSystolicIsDropped() {
+        for (sys in listOf("154:", "154l", "154|")) {
+            val boxes = listOf(word(sys, 100f, 0f, 100f), word("100", 100f, 120f, 100f), word("76", 160f, 240f, 50f))
+            val d = DisplayParser.parse(boxes, ReadingType.BP).detections
+            assertEquals(154, d[Field.SYSTOLIC]?.value, sys)
+            assertEquals(100, d[Field.DIASTOLIC]?.value, sys)
+        }
+        val clock = DisplayParser.parse(listOf(word("1:12", 0f, 0f, 100f)), ReadingType.BP)
+        assertTrue(clock.detections.isEmpty())
+    }
+
+    @Test
+    fun splitDigitsAreJoined() {
+        val boxes = listOf(
+            word("1", 100f, 0f, 100f),
+            word("54", 170f, 0f, 100f),
+            word("I", 100f, 120f, 100f),
+            word("00", 170f, 120f, 100f),
+            word("76", 160f, 240f, 50f),
+        )
+        val d = DisplayParser.parse(boxes, ReadingType.BP).detections
+        assertEquals(154, d[Field.SYSTOLIC]?.value)
+        assertEquals(100, d[Field.DIASTOLIC]?.value)
+        assertEquals(76, d[Field.PULSE]?.value)
+    }
+
+    @Test
+    fun separateNumbersOnOneRowStayApart() {
+        // An oximeter showing SpO₂ and pulse side by side.
+        val boxes = listOf(word("97", 0f, 0f, 100f), word("8", 200f, 0f, 100f), word("68", 330f, 0f, 100f))
+        val d = DisplayParser.parse(boxes, ReadingType.OXIMETER).detections
+        assertEquals(97, d[Field.SPO2]?.value)
+        assertEquals(68, d[Field.PULSE]?.value)
+    }
+
+    @Test
+    fun picksTheFullerReading() {
+        val partial = listOf(word("154", 0f, 0f, 100f))
+        val full = listOf(word("154", 0f, 0f, 100f), word("100", 0f, 120f, 100f), word("76", 0f, 240f, 50f))
+        assertEquals(full, DisplayParser.better(partial, full, ReadingType.BP))
+        assertEquals(full, DisplayParser.better(full, partial, null))
+        assertTrue(DisplayParser.isComplete(full, ReadingType.BP))
+        assertEquals(1 / 3f, DisplayParser.completeness(partial, ReadingType.BP))
+    }
+
+    @Test
+    fun aDoubtfulValueIsNotClear() {
+        val clear = listOf(word("154", 0f, 0f, 100f), word("100", 0f, 120f, 100f), word("76", 0f, 240f, 50f))
+        val doubtful = clear.take(2) + word("76", 0f, 240f, 50f, confidence = 0.65f)
+        assertTrue(DisplayParser.readsClearly(clear, ReadingType.BP))
+        assertTrue(DisplayParser.isComplete(doubtful, ReadingType.BP))
+        assertFalse(DisplayParser.readsClearly(doubtful, ReadingType.BP))
+    }
+
+    @Test
     fun nothingRecognised() {
         assertTrue(DisplayParser.parse(emptyList(), ReadingType.BP).detections.isEmpty())
         assertTrue(DisplayParser.parse(listOf(word("OMRON", 0f, 0f, 40f)), ReadingType.BP).detections.isEmpty())

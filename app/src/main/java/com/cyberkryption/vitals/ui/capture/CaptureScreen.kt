@@ -5,12 +5,15 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import android.util.Size
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.mlkit.vision.MlKitAnalyzer
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
@@ -45,7 +48,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -66,15 +72,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.core.Field
 import com.cyberkryption.vitals.core.ReadingType
-import com.cyberkryption.vitals.extraction.toBoxes
+import com.cyberkryption.vitals.extraction.FrameReader
+import com.cyberkryption.vitals.extraction.GuideFrame
 import com.cyberkryption.vitals.ui.components.IconAction
 import com.cyberkryption.vitals.ui.components.SegmentedColors
 import com.cyberkryption.vitals.ui.components.Segmented
 import com.cyberkryption.vitals.ui.findActivity
 import com.cyberkryption.vitals.ui.theme.CaptureColors
 import com.cyberkryption.vitals.ui.theme.VitalsType
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicReference
 
 /** Always dark: camera preview, a guide frame for the display, live detection and the shutter. */
 @Composable
@@ -100,12 +107,14 @@ fun CaptureScreen(
     val fg = CaptureColors.foreground
     val shutterLabel = stringResource(R.string.capture_shutter)
     var shutter: (() -> Unit)? by remember { mutableStateOf(null) }
+    val guide = remember { GuideTracker() }
 
     Box(Modifier.fillMaxSize().background(CaptureColors.background)) {
         if (granted) {
             CameraPreview(
                 viewModel = viewModel,
                 torch = state.torch,
+                guide = guide,
                 onCaptured = onCaptured,
                 registerShutter = { shutter = it },
             )
@@ -153,7 +162,8 @@ fun CaptureScreen(
                         .widthIn(max = 300.dp)
                         .fillMaxWidth()
                         .aspectRatio(if (state.mode == ReadingType.BP) 3f / 4f else 16f / 9f)
-                        .border(2.5.dp, CaptureColors.guide, RoundedCornerShape(28.dp)),
+                        .border(2.5.dp, CaptureColors.guide, RoundedCornerShape(28.dp))
+                        .onGloballyPositioned { guide.guideAt(it.boundsInRoot()) },
                 )
                 if (!granted) {
                     PermissionPrompt(asked = asked, onRequest = { permission.launch(Manifest.permission.CAMERA) })
@@ -218,10 +228,35 @@ fun CaptureScreen(
     }
 }
 
+/** Where the guide frame sits over the camera preview, kept for the analysis thread. */
+private class GuideTracker {
+    val frame = AtomicReference<GuideFrame?>(null)
+    private var preview: Rect? = null
+    private var guide: Rect? = null
+
+    fun previewAt(bounds: Rect) {
+        preview = bounds
+        publish()
+    }
+
+    fun guideAt(bounds: Rect) {
+        guide = bounds
+        publish()
+    }
+
+    private fun publish() {
+        val p = preview ?: return
+        val g = guide ?: return
+        val inPreview = com.cyberkryption.vitals.core.Box(g.left - p.left, g.top - p.top, g.right - p.left, g.bottom - p.top)
+        frame.set(GuideFrame(inPreview, p.width, p.height))
+    }
+}
+
 @Composable
 private fun CameraPreview(
     viewModel: CaptureViewModel,
     torch: Boolean,
+    guide: GuideTracker,
     onCaptured: (String) -> Unit,
     registerShutter: (() -> Unit) -> Unit,
 ) {
@@ -232,6 +267,17 @@ private fun CameraPreview(
         LifecycleCameraController(context).apply {
             setEnabledUseCases(CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS)
             imageAnalysisBackpressureStrategy = ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST
+            // Preview and analysis share a 4:3 frame, so the guide frame on screen maps onto the
+            // analysed frame; 1280 × 960 gives the digits enough pixels.
+            previewResolutionSelector = ResolutionSelector.Builder()
+                .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+                .build()
+            imageAnalysisResolutionSelector = ResolutionSelector.Builder()
+                .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+                .setResolutionStrategy(
+                    ResolutionStrategy(Size(1280, 960), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER),
+                )
+                .build()
         }
     }
 
@@ -241,17 +287,17 @@ private fun CameraPreview(
     }
 
     DisposableEffect(controller) {
-        val executor = ContextCompat.getMainExecutor(context)
-        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-        controller.setImageAnalysisAnalyzer(
-            executor,
-            MlKitAnalyzer(listOf(recognizer), ImageAnalysis.COORDINATE_SYSTEM_ORIGINAL, executor) { result ->
-                result.getValue(recognizer)?.let { viewModel.onFrame(it.toBoxes()) }
-            },
-        )
+        // Reading a frame takes tens of milliseconds, so it runs off the main thread; results come back to it.
+        val analysis = Executors.newSingleThreadExecutor()
+        val main = ContextCompat.getMainExecutor(context)
+        val reader = FrameReader(guide.frame, { viewModel.state.value.mode }) { boxes ->
+            main.execute { viewModel.onFrame(boxes) }
+        }
+        controller.setImageAnalysisAnalyzer(analysis, reader)
         onDispose {
             controller.clearImageAnalysisAnalyzer()
-            recognizer.close()
+            analysis.execute { reader.close() }
+            analysis.shutdown()
         }
     }
 
@@ -285,7 +331,7 @@ private fun CameraPreview(
                 this.controller = controller
             }
         },
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().onGloballyPositioned { guide.previewAt(it.boundsInRoot()) },
     )
 }
 
