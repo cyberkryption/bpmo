@@ -75,13 +75,26 @@ fun TrendsScreen(
     val locale = LocalConfiguration.current.locales[0]
     val c = Vitals.colors
 
+    var pickingReport by remember { mutableStateOf(false) }
+
     LaunchedEffect(viewModel) {
         viewModel.shareRequests.collect { context.startActivity(it) }
     }
 
+    state?.takeIf { pickingReport }?.let { s ->
+        ReportRangePicker(
+            initial = s.period,
+            onDismiss = { pickingReport = false },
+            onPicked = {
+                pickingReport = false
+                viewModel.exportReport(it)
+            },
+        )
+    }
+
     Column(modifier.fillMaxSize().background(c.bg)) {
         ScreenHeader(title = stringResource(R.string.trends_title)) {
-            ExportMenu(onExport = viewModel::export)
+            ExportMenu(onCsv = viewModel::exportCsv, onReport = { pickingReport = true })
         }
         val s = state ?: return@Column
         Column(
@@ -174,7 +187,7 @@ fun TrendsScreen(
 }
 
 @Composable
-private fun ExportMenu(onExport: (ExportFormat) -> Unit) {
+private fun ExportMenu(onCsv: () -> Unit, onReport: () -> Unit) {
     var open by remember { mutableStateOf(false) }
     val c = Vitals.colors
     Box {
@@ -190,14 +203,14 @@ private fun ExportMenu(onExport: (ExportFormat) -> Unit) {
                 text = { Text(stringResource(R.string.export_csv), style = VitalsType.bodyMedium) },
                 onClick = {
                     open = false
-                    onExport(ExportFormat.CSV)
+                    onCsv()
                 },
             )
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.export_pdf), style = VitalsType.bodyMedium) },
+                text = { Text(stringResource(R.string.export_report), style = VitalsType.bodyMedium) },
                 onClick = {
                     open = false
-                    onExport(ExportFormat.PDF)
+                    onReport()
                 },
             )
         }

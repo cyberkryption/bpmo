@@ -1,6 +1,7 @@
 package com.cyberkryption.vitals.ui.trends
 
 import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -50,8 +51,6 @@ data class TrendsUiState(
     val isCurrent: Boolean get() = periodsBack == 0
 }
 
-enum class ExportFormat(val mimeType: String) { CSV("text/csv"), PDF("application/pdf") }
-
 class TrendsViewModel(
     private val readings: ReadingRepository,
     settings: SettingsRepository,
@@ -90,16 +89,18 @@ class TrendsViewModel(
         selection.update { (span, back) -> span to (back - 1).coerceAtLeast(0) }
     }
 
-    fun export(format: ExportFormat) {
+    fun exportCsv() = share("text/csv") { exporter.csv(it.guideline) }
+
+    /** A PDF report of the readings from [period]'s first day to its last. */
+    fun exportReport(period: Period) = share("application/pdf") { exporter.report(period, it.guideline) }
+
+    private fun share(mimeType: String, write: suspend (TrendsUiState) -> Uri) {
         val s = state.value ?: return
         viewModelScope.launch {
             try {
-                val uri = when (format) {
-                    ExportFormat.CSV -> exporter.csv(s.guideline)
-                    ExportFormat.PDF -> exporter.pdf(s.period, s.guideline)
-                }
+                val uri = write(s)
                 appLock.expectHandoff()
-                shares.send(exporter.shareIntent(uri, format.mimeType))
+                shares.send(exporter.shareIntent(uri, mimeType))
             } catch (e: IOException) {
                 // Nothing to share; the menu simply closes.
             }

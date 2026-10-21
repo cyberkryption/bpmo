@@ -122,16 +122,38 @@
 
     <!-- Export -->
     <string name="export_csv">All readings (CSV)</string>
-    <string name="export_pdf">This period (PDF)</string>
+    <string name="export_report">PDF report…</string>
     <string name="export_chooser_title">Share readings</string>
-    <string name="pdf_kicker">Vitals · summary</string>
-    <string name="pdf_readings">Readings</string>
-    <string name="pdf_col_date">Date</string>
-    <string name="pdf_col_time">Time</string>
-    <string name="pdf_col_reading">Reading</string>
-    <string name="pdf_col_pulse">Pulse</string>
-    <string name="pdf_col_category">Category</string>
-    <string name="pdf_col_note">Note</string>
+    <string name="report_dates">Report dates</string>
+    <string name="report_create">Create report</string>
+    <string name="report_kicker">Vitals · health report</string>
+    <string name="report_subtitle">Created %1$s · Blood pressure categories follow %2$s</string>
+    <string name="report_section_bp">Blood pressure</string>
+    <string name="report_section_spo2">Blood oxygen</string>
+    <string name="report_continued">%1$s, continued</string>
+    <plurals name="report_readings">
+        <item quantity="one">%d reading</item>
+        <item quantity="other">%d readings</item>
+    </plurals>
+    <string name="report_no_bp">No blood pressure readings in this period.</string>
+    <string name="report_no_spo2">No blood oxygen readings in this period.</string>
+    <string name="report_col_date">Date</string>
+    <string name="report_col_time">Time</string>
+    <string name="report_col_systolic">Systolic</string>
+    <string name="report_col_diastolic">Diastolic</string>
+    <string name="report_col_pulse">Pulse</string>
+    <string name="report_col_oxygen">Oxygen</string>
+    <string name="report_col_notes">Notes</string>
+    <string name="report_unit_spo2" formatted="false">SpO₂ %</string>
+    <string name="report_trends">Trends</string>
+    <string name="report_pulse_title">Pulse</string>
+    <string name="report_spo2_title">Blood oxygen (SpO₂)</string>
+    <string name="report_avg_bpm">avg bpm</string>
+    <string name="report_avg_percent" formatted="false">avg %</string>
+    <string name="report_weekly">Each point is a week\'s average.</string>
+    <string name="report_monthly">Each point is a 30-day average.</string>
+    <string name="report_footer">Vitals · %1$s</string>
+    <string name="report_page">Page %1$d of %2$d</string>
     <string name="pdf_footer">Categories follow %1$s. Vitals is not a medical device.</string>
 
     <!-- Reading detail -->
