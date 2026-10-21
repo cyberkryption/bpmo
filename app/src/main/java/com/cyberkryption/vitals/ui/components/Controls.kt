@@ -43,7 +43,7 @@ data class SegmentedColors(
 @Composable
 fun segmentedColors(): SegmentedColors {
     val c = Vitals.colors
-    return SegmentedColors(track = if (c.isDark) c.surface else c.surfaceVariant, selected = c.primary, selectedText = c.onPrimary, text = c.text)
+    return SegmentedColors(track = c.surfaceVariant, selected = c.primary, selectedText = c.onPrimary, text = c.text)
 }
 
 /** Pill track; the selected option slides into a filled pill. */
@@ -74,7 +74,7 @@ fun <T> Segmented(
                     .background(fill)
                     .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(value) })
                     .heightIn(min = height - 6.dp)
-                    .padding(horizontal = 18.dp),
+                    .padding(horizontal = if (fillWidth) 6.dp else 18.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

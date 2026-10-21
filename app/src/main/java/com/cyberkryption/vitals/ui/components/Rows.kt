@@ -50,13 +50,17 @@ fun ReadingRow(
             )
             .semantics { this.selected = selected }
             .clickable(onClick = onClick)
-            .padding(start = 14.dp, top = 12.dp, end = 10.dp, bottom = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+            .padding(start = 12.dp, top = 10.dp, end = 8.dp, bottom = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TypeIcon(reading.type)
+        TypeIcon(reading.type, onTint = selected)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = VitalsType.rowTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // The category sits beside the time so the values below get the full width.
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(title, style = VitalsType.rowTitle, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                StatusBadge(reading.status, small = true)
+            }
             Text(
                 "${reading.valueText()} ${reading.unitText()}",
                 style = VitalsType.rowSubtitle,
@@ -68,17 +72,19 @@ fun ReadingRow(
                 Text(note, style = VitalsType.meta, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        StatusBadge(reading.status, small = true)
         Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = c.muted, modifier = Modifier.size(20.dp))
     }
 }
 
-/** Blood pressure on the teal circle, SpO₂ on the lavender one. */
+/**
+ * Blood pressure on the teal circle, SpO₂ on the lavender one. [onTint] puts the circle on the
+ * surface colour instead, for rows that are already tinted.
+ */
 @Composable
-fun TypeIcon(type: ReadingType, modifier: Modifier = Modifier) {
+fun TypeIcon(type: ReadingType, modifier: Modifier = Modifier, onTint: Boolean = false) {
     val c = Vitals.colors
     when (type) {
-        ReadingType.BP -> IconCircle(R.drawable.ic_heart_pulse, c.primaryContainer, c.onPrimaryContainer, modifier, size = 44.dp, iconSize = 22.dp)
-        ReadingType.OXIMETER -> IconCircle(R.drawable.ic_droplet, c.restContainer, c.restInk, modifier, size = 44.dp, iconSize = 22.dp)
+        ReadingType.BP -> IconCircle(R.drawable.ic_heart_pulse, if (onTint) c.surface else c.primaryContainer, c.onPrimaryContainer, modifier)
+        ReadingType.OXIMETER -> IconCircle(R.drawable.ic_droplet, if (onTint) c.surface else c.restContainer, c.restInk, modifier)
     }
 }

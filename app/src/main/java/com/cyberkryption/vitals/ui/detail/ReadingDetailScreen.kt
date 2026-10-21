@@ -48,6 +48,7 @@ import com.cyberkryption.vitals.ui.components.PhotoFrame
 import com.cyberkryption.vitals.ui.components.SectionLabel
 import com.cyberkryption.vitals.ui.components.StatusBadge
 import com.cyberkryption.vitals.ui.components.TypeIcon
+import com.cyberkryption.vitals.ui.components.ValueWithUnit
 import com.cyberkryption.vitals.ui.components.VitalsCard
 import com.cyberkryption.vitals.ui.components.VitalsDialog
 import com.cyberkryption.vitals.ui.components.bottomRule
@@ -132,15 +133,14 @@ private fun DetailBody(reading: Reading) {
                     modifier = Modifier.weight(1f),
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val value = when (reading.type) {
+            ValueWithUnit(
+                value = when (reading.type) {
                     ReadingType.BP -> "${reading.systolic} / ${reading.diastolic}"
                     ReadingType.OXIMETER -> reading.spo2.toString()
-                }
-                val unit = stringResource(if (reading.type == ReadingType.BP) R.string.unit_mmhg else R.string.unit_percent)
-                Text(value, style = VitalsType.detailValue, modifier = Modifier.alignByBaseline())
-                Text(unit, style = VitalsType.subtitle, color = c.muted, modifier = Modifier.alignByBaseline())
-            }
+                },
+                unit = stringResource(if (reading.type == ReadingType.BP) R.string.unit_mmhg else R.string.unit_percent),
+                valueStyle = VitalsType.detailValue,
+            )
             StatusBadge(reading.status, long = true)
             Row(
                 Modifier

@@ -51,6 +51,8 @@ object SampleData {
     /** Replaces whatever is stored with the sample month; returns the id of this morning's reading. */
     suspend fun seed(container: AppContainer, photoDir: File): Long {
         container.readings.all().forEach { container.readings.delete(it) }
+        // The one-time lock offer would otherwise cover the dashboard.
+        container.settings.markLockOffered()
         photoDir.mkdirs()
 
         val random = Random(7)
