@@ -10,7 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.dp
+import com.cyberkryption.vitals.core.Guideline
 
 /** Corner radii: metric cards 24, list items 16, inputs 14; buttons, chips and badges are pills. */
 object VitalsShape {
@@ -30,17 +32,21 @@ val VitalsShapes = Shapes(
     extraLarge = VitalsShape.dialog,
 )
 
+/** The guidance blood pressure categories follow, chosen in Settings. */
+val LocalGuideline = staticCompositionLocalOf { Guideline.AHA }
+
 @Composable
 fun VitalsTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     categoryColors: Boolean = true,
+    guideline: Guideline = Guideline.AHA,
     content: @Composable () -> Unit,
 ) {
     val colors = remember(darkTheme, categoryColors) {
         (if (darkTheme) DarkVitalsColors else LightVitalsColors).copy(categoryColors = categoryColors)
     }
     val scheme = remember(colors) { colors.toColorScheme() }
-    CompositionLocalProvider(LocalVitalsColors provides colors) {
+    CompositionLocalProvider(LocalVitalsColors provides colors, LocalGuideline provides guideline) {
         MaterialTheme(colorScheme = scheme, typography = VitalsTypography, shapes = VitalsShapes) {
             CompositionLocalProvider(
                 LocalContentColor provides colors.text,
@@ -55,4 +61,8 @@ object Vitals {
     val colors: VitalsColors
         @Composable @ReadOnlyComposable
         get() = LocalVitalsColors.current
+
+    val guideline: Guideline
+        @Composable @ReadOnlyComposable
+        get() = LocalGuideline.current
 }

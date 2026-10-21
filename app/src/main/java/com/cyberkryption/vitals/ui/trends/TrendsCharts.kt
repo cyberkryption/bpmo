@@ -15,6 +15,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.cyberkryption.vitals.core.DayPoint
+import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.Span
 import com.cyberkryption.vitals.core.Tone
 import com.cyberkryption.vitals.ui.components.Scale
@@ -64,7 +65,7 @@ private fun xLabels(days: List<DayPoint>, span: Span, locale: Locale): List<Pair
 
 /** Floating rounded bars from diastolic up to systolic, one per day, coloured by category. */
 @Composable
-fun BloodPressureChart(days: List<DayPoint>, span: Span, locale: Locale, modifier: Modifier = Modifier) {
+fun BloodPressureChart(days: List<DayPoint>, span: Span, locale: Locale, guideline: Guideline, modifier: Modifier = Modifier) {
     val c = Vitals.colors
     val measurer = rememberTextMeasurer()
     val scale = bpScale(days)
@@ -96,8 +97,8 @@ fun BloodPressureChart(days: List<DayPoint>, span: Span, locale: Locale, modifie
             }
             drawLine(c.divider, Offset(0f, plotHeight - stroke / 2), Offset(plotWidth, plotHeight - stroke / 2), stroke)
             clipRect(right = area.width, bottom = area.height) {
-                dashedLine(threshold, scale.y(130f, plotHeight), strokeWidth = 1.5.dp.toPx())
-                dashedLine(threshold, scale.y(80f, plotHeight), strokeWidth = 1.5.dp.toPx())
+                dashedLine(threshold, scale.y(guideline.stage1Systolic.toFloat(), plotHeight), strokeWidth = 1.5.dp.toPx())
+                dashedLine(threshold, scale.y(guideline.stage1Diastolic.toFloat(), plotHeight), strokeWidth = 1.5.dp.toPx())
             }
 
             val inset = 2.dp.toPx()
@@ -112,7 +113,7 @@ fun BloodPressureChart(days: List<DayPoint>, span: Span, locale: Locale, modifie
                 val top = scale.y(sys.toFloat(), plotHeight)
                 val height = (scale.y(dia.toFloat(), plotHeight) - top).coerceAtLeast(2.dp.toPx())
                 drawRoundRect(
-                    color = c.tone(day.status!!.tone).base,
+                    color = c.tone(day.status(guideline)!!.tone).base,
                     topLeft = Offset(slotCenter(i) - barWidth / 2, top),
                     size = Size(barWidth, height),
                     cornerRadius = CornerRadius(minOf(barWidth, height) / 2),

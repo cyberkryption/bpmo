@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.core.Csv
+import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.Period
 import com.cyberkryption.vitals.data.ReadingRepository
 import com.cyberkryption.vitals.ui.components.shortLabel
@@ -19,21 +20,21 @@ import java.time.ZoneId
 class Exporter(private val context: Context, private val readings: ReadingRepository) {
     private val dir: File get() = File(context.cacheDir, "exports").apply { mkdirs() }
 
-    /** Every reading, oldest first. */
-    suspend fun csv(): Uri = withContext(Dispatchers.IO) {
+    /** Every reading, oldest first, with its category under [guideline]. */
+    suspend fun csv(guideline: Guideline): Uri = withContext(Dispatchers.IO) {
         val zone = ZoneId.systemDefault()
-        val text = Csv.readings(readings.all(), zone) { context.getString(it.shortLabel()) }
+        val text = Csv.readings(readings.all(), zone, guideline) { context.getString(it.shortLabel()) }
         val file = File(dir, "vitals-${LocalDate.now(zone)}.csv")
         file.writeText(text)
         uriFor(file)
     }
 
-    /** One-page-per-section PDF summary of a trends period. */
-    suspend fun pdf(period: Period): Uri = withContext(Dispatchers.IO) {
+    /** One-page-per-section PDF summary of a trends period, with categories under [guideline]. */
+    suspend fun pdf(period: Period, guideline: Guideline): Uri = withContext(Dispatchers.IO) {
         val zone = ZoneId.systemDefault()
         val inPeriod = readings.between(period.startInstant(zone), period.endInstant(zone))
         val file = File(dir, "vitals-${period.start}-${period.end}.pdf")
-        PdfReport(context, zone).write(file, period, inPeriod)
+        PdfReport(context, zone).write(file, period, inPeriod, guideline)
         uriFor(file)
     }
 

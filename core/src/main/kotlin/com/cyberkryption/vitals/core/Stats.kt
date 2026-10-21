@@ -11,7 +11,7 @@ data class BloodPressureSummary(val systolic: Summary, val diastolic: Summary) {
     val count: Int get() = systolic.count
 
     /** Category of the averaged values, not an average of categories. */
-    val status: Status get() = Classify.bloodPressure(systolic.average, diastolic.average)
+    fun status(guideline: Guideline): Status = Classify.bloodPressure(systolic.average, diastolic.average, guideline)
 }
 
 /** Averages and chronological series for a window of readings. */
@@ -48,7 +48,7 @@ data class VitalsSummary(
 }
 
 /** Reading counts per blood-pressure category, in severity order, omitting empty categories. */
-fun categoryCounts(readings: List<Reading>): List<Pair<Status, Int>> {
-    val counts = readings.filter { it.type == ReadingType.BP }.groupingBy { it.status }.eachCount()
-    return BloodPressureStatuses.mapNotNull { status -> counts[status]?.let { status to it } }
+fun categoryCounts(readings: List<Reading>, guideline: Guideline): List<Pair<Status, Int>> {
+    val counts = readings.filter { it.type == ReadingType.BP }.groupingBy { it.status(guideline) }.eachCount()
+    return guideline.statuses.mapNotNull { status -> counts[status]?.let { status to it } }
 }

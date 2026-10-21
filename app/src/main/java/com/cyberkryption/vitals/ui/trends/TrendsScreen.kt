@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cyberkryption.vitals.R
+import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.PeriodFormat
 import com.cyberkryption.vitals.core.Span
 import com.cyberkryption.vitals.core.Status
@@ -129,8 +130,8 @@ fun TrendsScreen(
                     )
                     Text(stringResource(R.string.unit_avg_mmhg), style = VitalsType.meta, color = c.muted, modifier = Modifier.alignByBaseline())
                 }
-                BloodPressureChart(s.days, s.span, locale)
-                ChartLegend()
+                BloodPressureChart(s.days, s.span, locale, s.guideline)
+                ChartLegend(s.guideline)
             }
 
             AdaptiveTiles(
@@ -205,7 +206,7 @@ private fun ExportMenu(onExport: (ExportFormat) -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ChartLegend() {
+private fun ChartLegend(guideline: Guideline) {
     val c = Vitals.colors
     val threshold = c.tone(Tone.STAGE1).base
     FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -225,7 +226,11 @@ private fun ChartLegend() {
                         )
                     },
             )
-            Text(stringResource(R.string.trends_threshold_legend), style = VitalsType.caption, color = c.muted)
+            Text(
+                stringResource(R.string.trends_threshold_legend, guideline.stage1Systolic, guideline.stage1Diastolic),
+                style = VitalsType.caption,
+                color = c.muted,
+            )
         }
     }
 }

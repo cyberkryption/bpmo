@@ -53,8 +53,8 @@ data class DayPoint(
     val pulse: Int?,
     val spo2: Int?,
 ) {
-    val status: Status?
-        get() = if (systolic != null && diastolic != null) Classify.bloodPressure(systolic, diastolic) else null
+    fun status(guideline: Guideline): Status? =
+        if (systolic != null && diastolic != null) Classify.bloodPressure(systolic, diastolic, guideline) else null
 }
 
 object Daily {

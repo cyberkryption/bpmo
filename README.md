@@ -15,11 +15,11 @@ It's built in Kotlin with Jetpack Compose and Material 3: rounded cards, a sage-
 
 ### Screens
 
-**Today** shows your average blood pressure for the last 7 or 30 days, with its category (Normal, Elevated, Stage 1, Stage 2 or Crisis, following the AHA guidelines for adults), the systolic and diastolic ranges and a small trend line. Cards for heart rate and SpO₂ have their own trend lines, and your three latest readings sit underneath. Scan reading and Import are the two buttons at the bottom.
+**Today** shows your average blood pressure for the last 7 or 30 days, with its category (see [Categories](#categories)), the systolic and diastolic ranges and a small trend line. Cards for heart rate and SpO₂ have their own trend lines, and your three latest readings sit underneath. Scan reading and Import are the two buttons at the bottom.
 
 **History** lists every reading grouped by day, each with its category. You can filter to blood pressure or SpO₂ only, or search your notes. Tap a reading to see the source photo, how it was dated and anything you corrected. You can edit or delete it from there.
 
-**Trends** shows a week or a month at a time. Blood pressure appears as rounded bars from diastolic up to systolic, coloured by category, with the 130/80 thresholds marked. Below are the heart-rate and SpO₂ lines, a count of readings per category and a table of averages, minimums and maximums. The download button exports a CSV of all your readings, or a PDF summary of the period on screen.
+**Trends** shows a week or a month at a time. Blood pressure appears as rounded bars from diastolic up to systolic, coloured by category, with the Stage 1 thresholds marked. Below are the heart-rate and SpO₂ lines, a count of readings per category and a table of averages, minimums and maximums. The download button exports a CSV of all your readings, or a PDF summary of the period on screen.
 
 | | Today | History | Trends |
 |---|:---:|:---:|:---:|
@@ -32,7 +32,7 @@ It's built in Kotlin with Jetpack Compose and Material 3: rounded cards, a sage-
 
 **Import** opens the Android Photo Picker for one or more past photos. They appear in a grid with the time each was taken, read from the photo's EXIF data. A photo with no date is flagged, and you set its date during review.
 
-**Review** shows every reading before it's saved. Boxes on the photo mark where each value was read. Any value the app wasn't sure of gets an orange border and a "check" note, and values outside a plausible range block saving. The category updates as you edit. You can change the date and time, and add a note, with quick chips such as "Before meds" or "Left arm". A reading in the hypertensive-crisis range shows advice on what to do before it's saved.
+**Review** shows every reading before it's saved. Boxes on the photo mark where each value was read. Any value the app wasn't sure of gets an orange border and a "check" note, and values outside a plausible range block saving. The category updates as you edit. You can change the date and time, and add a note, with quick chips such as "Before meds" or "Left arm". A reading in the top category (hypertensive crisis or severe hypertension) shows advice on what to do before it's saved.
 
 **How the display is read.** Most monitors show seven-segment digits, made of separate bars, which general text recognition often misses or misreads. So Vitals reads them itself, on the phone:
 
@@ -56,6 +56,22 @@ The numbers then go to SYS, DIA and pulse, or SpO₂ and pulse, top to bottom, a
     <td><img src="docs/screenshots/dark-review.png" alt="Review screen, dark" width="250"></td>
   </tr>
 </table>
+
+### Categories
+
+Blood pressure categories follow the guidance chosen in **Settings › Blood pressure**:
+
+| | AHA (US) | NICE (UK), home readings |
+|---|---|---|
+| Normal | below 120/80 | below 135/85 |
+| Elevated | 120–129 systolic, diastolic below 80 | (no such category) |
+| Stage 1 | from 130/80 | from 135/85 |
+| Stage 2 | from 140/90 | from 150/95 |
+| Top category | Hypertensive crisis, above 180/120 | Severe hypertension, from 180/120 |
+
+A reading goes in a category when either its systolic or its diastolic value reaches that category's threshold. The AHA thresholds are its categories for adults. NICE (guideline NG136) sets lower thresholds for averages measured at home than for clinic readings (140/90 for Stage 1 and 160/100 for Stage 2), because blood pressure tends to read lower at home. Vitals records home readings, so it uses the home thresholds.
+
+Until you choose, Vitals uses NICE if the phone's region is the UK and AHA everywhere else. Categories aren't stored with readings, so changing the guidance re-labels every reading, chart and export straight away.
 
 ### Privacy and lock
 
@@ -113,7 +129,7 @@ Each CI build's version code is its run number, so a newer build always installs
 
 ### Layout
 
-- `core/`: plain Kotlin with no Android dependencies, holding the AHA category rules, validation, averages, trend periods, the seven-segment display reader and parser, EXIF date parsing, Review form state and CSV export. It's unit-tested on the JVM.
+- `core/`: plain Kotlin with no Android dependencies, holding the AHA and NICE category rules, validation, averages, trend periods, the seven-segment display reader and parser, EXIF date parsing, Review form state and CSV export. It's unit-tested on the JVM.
 - `app/`: the Android app.
   - `data/`: Room and DataStore.
   - `extraction/`: reading photos and live camera frames (with ML Kit as the fallback), and EXIF.

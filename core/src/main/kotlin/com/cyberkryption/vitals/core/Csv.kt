@@ -10,8 +10,8 @@ object Csv {
         "taken_at", "type", "systolic", "diastolic", "pulse", "spo2", "category", "note", "date_source",
     )
 
-    /** RFC 4180 CSV, oldest reading first, timestamps in ISO 8601 with the zone's offset. */
-    fun readings(readings: List<Reading>, zone: ZoneId, statusLabel: (Status) -> String): String = buildString {
+    /** RFC 4180 CSV, oldest reading first, timestamps in ISO 8601 with the zone's offset; categories under [guideline]. */
+    fun readings(readings: List<Reading>, zone: ZoneId, guideline: Guideline, statusLabel: (Status) -> String): String = buildString {
         appendRow(HEADER)
         for (r in readings.sortedBy { it.takenAt }) {
             appendRow(
@@ -23,7 +23,7 @@ object Csv {
                     r.diastolic?.toString().orEmpty(),
                     r.pulse.toString(),
                     r.spo2?.toString().orEmpty(),
-                    statusLabel(r.status),
+                    statusLabel(r.status(guideline)),
                     r.note.orEmpty(),
                     r.takenAtSource.name,
                 ),

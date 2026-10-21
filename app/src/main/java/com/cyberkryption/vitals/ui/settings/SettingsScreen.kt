@@ -41,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cyberkryption.vitals.BuildConfig
 import com.cyberkryption.vitals.R
+import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.data.BackupCodec
 import com.cyberkryption.vitals.data.BackupProblem
 import com.cyberkryption.vitals.data.RelockTimeout
@@ -55,6 +56,9 @@ import com.cyberkryption.vitals.ui.components.TextAction
 import com.cyberkryption.vitals.ui.components.VitalsCard
 import com.cyberkryption.vitals.ui.components.VitalsDialog
 import com.cyberkryption.vitals.ui.components.VitalsSwitch
+import com.cyberkryption.vitals.ui.components.label
+import com.cyberkryption.vitals.ui.components.source
+import com.cyberkryption.vitals.ui.components.thresholds
 import com.cyberkryption.vitals.ui.theme.Vitals
 import com.cyberkryption.vitals.ui.theme.VitalsShape
 import com.cyberkryption.vitals.ui.theme.VitalsType
@@ -141,6 +145,28 @@ fun SettingsScreen(
                     )
                 }
             }
+            Section(stringResource(R.string.settings_blood_pressure)) {
+                Row(
+                    Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    IconCircle(R.drawable.ic_heart_pulse, c.primaryContainer, c.onPrimaryContainer)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(stringResource(R.string.settings_guideline), style = VitalsType.cardTitle)
+                        Text(stringResource(s.guideline.thresholds()), style = VitalsType.meta, color = c.muted)
+                    }
+                }
+                Segmented(
+                    options = Guideline.entries.map { it to stringResource(it.label()) },
+                    selected = s.guideline,
+                    onSelect = viewModel::setGuideline,
+                    fillWidth = true,
+                    modifier = Modifier
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                        .fillMaxWidth(),
+                )
+            }
             Section(stringResource(R.string.settings_display)) {
                 Row(
                     Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 12.dp),
@@ -194,7 +220,11 @@ fun SettingsScreen(
             )
             Section(stringResource(R.string.settings_about)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.settings_about_body), style = VitalsType.bodyMedium, color = c.muted)
+                    Text(
+                        stringResource(R.string.settings_about_body, stringResource(s.guideline.source())),
+                        style = VitalsType.bodyMedium,
+                        color = c.muted,
+                    )
                     Text(stringResource(R.string.settings_version, BuildConfig.VERSION_NAME), style = VitalsType.meta, color = c.muted)
                 }
             }

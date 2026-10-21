@@ -51,7 +51,7 @@
     <string name="a11y_bp_value">%1$d over %2$d millimetres of mercury</string>
     <string name="list_and">" and "</string>
 
-    <!-- Categories (AHA, adult) -->
+    <!-- Categories: AHA (adults) or NICE, as chosen in Settings -->
     <string name="status_normal">Normal</string>
     <string name="status_elevated">Elevated</string>
     <string name="status_stage1">Stage 1</string>
@@ -60,6 +60,8 @@
     <string name="status_stage1_long">Stage 1 hypertension</string>
     <string name="status_stage2_long">Stage 2 hypertension</string>
     <string name="status_crisis_long">Hypertensive crisis</string>
+    <string name="status_severe">Severe</string>
+    <string name="status_severe_long">Severe hypertension</string>
     <string name="status_spo2_low">Low</string>
     <string name="status_spo2_very_low">Very low</string>
     <string name="status_spo2_normal_long">Normal SpO₂</string>
@@ -102,7 +104,7 @@
     <!-- Trends -->
     <string name="trends_title">Trends</string>
     <string name="trends_bar_legend">Bar = diastolic → systolic</string>
-    <string name="trends_threshold_legend">130 / 80 thresholds</string>
+    <string name="trends_threshold_legend">%1$d / %2$d thresholds</string>
     <string name="trends_resting_range">Resting range %1$d–%2$d bpm</string>
     <string name="trends_spo2_threshold" formatted="false">Dashed = 95% threshold</string>
     <string name="trends_categories">BP categories</string>
@@ -130,7 +132,7 @@
     <string name="pdf_col_pulse">Pulse</string>
     <string name="pdf_col_category">Category</string>
     <string name="pdf_col_note">Note</string>
-    <string name="pdf_footer">Categories follow AHA guidelines for adults. Vitals is not a medical device.</string>
+    <string name="pdf_footer">Categories follow %1$s. Vitals is not a medical device.</string>
 
     <!-- Reading detail -->
     <string name="detail_title">Reading</string>
@@ -223,6 +225,7 @@
         <item>Stressed</item>
     </string-array>
     <string name="crisis_title">Hypertensive crisis range</string>
+    <string name="severe_title">Severe hypertension range</string>
     <string name="crisis_body">Wait five minutes and measure again. If it\'s still this high, contact your doctor straight away. If you also have chest pain, shortness of breath, back pain, numbness, weakness, a change in vision or difficulty speaking, call emergency services now.</string>
     <string name="crisis_save">Save reading</string>
     <string name="crisis_check">Check values</string>
@@ -258,6 +261,14 @@
     <string name="settings_relock_immediately">Immediately</string>
     <string name="settings_relock_one_minute">1 minute</string>
     <string name="settings_relock_five_minutes">5 minutes</string>
+    <string name="settings_blood_pressure">Blood pressure</string>
+    <string name="settings_guideline">Guidance</string>
+    <string name="guideline_aha">AHA (US)</string>
+    <string name="guideline_nice">NICE (UK)</string>
+    <string name="guideline_aha_thresholds">American Heart Association: Stage 1 from 130/80, Stage 2 from 140/90, crisis above 180/120.</string>
+    <string name="guideline_nice_thresholds">NICE, for readings taken at home: Stage 1 from 135/85, Stage 2 from 150/95, severe from 180/120.</string>
+    <string name="guideline_aha_source">AHA guidelines for adults</string>
+    <string name="guideline_nice_source">NICE guidance for home readings</string>
     <string name="settings_display">Display</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_detail">System follows your phone\'s light or dark setting.</string>
@@ -297,6 +308,6 @@
     <string name="backup_problem_cant_read">The file couldn\'t be opened. Try choosing it again.</string>
     <string name="action_ok">OK</string>
     <string name="settings_about">About</string>
-    <string name="settings_about_body">Categories follow AHA guidelines for adults. Vitals is not a medical device; talk to your doctor about your readings.</string>
+    <string name="settings_about_body">Categories follow %1$s. Vitals is not a medical device; talk to your doctor about your readings.</string>
     <string name="settings_version">Version %1$s</string>
 </resources>
