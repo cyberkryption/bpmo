@@ -29,12 +29,12 @@ class Exporter(private val context: Context, private val readings: ReadingReposi
         uriFor(file)
     }
 
-    /** One-page-per-section PDF summary of a trends period, with categories under [guideline]. */
-    suspend fun pdf(period: Period, guideline: Guideline): Uri = withContext(Dispatchers.IO) {
+    /** PDF report of the readings from [period]'s first day to its last, with categories under [guideline]. */
+    suspend fun report(period: Period, guideline: Guideline): Uri = withContext(Dispatchers.IO) {
         val zone = ZoneId.systemDefault()
         val inPeriod = readings.between(period.startInstant(zone), period.endInstant(zone))
-        val file = File(dir, "vitals-${period.start}-${period.end}.pdf")
-        PdfReport(context, zone).write(file, period, inPeriod, guideline)
+        val file = File(dir, "vitals-report-${period.start}-to-${period.end}.pdf")
+        HealthReport(context, zone).write(file, period, inPeriod, guideline, LocalDate.now(zone))
         uriFor(file)
     }
 

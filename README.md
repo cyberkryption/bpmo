@@ -19,7 +19,7 @@ It's built in Kotlin with Jetpack Compose and Material 3: rounded cards, a sage-
 
 **History** lists every reading grouped by day, each with its category. You can filter to blood pressure or SpO₂ only, or search your notes. Tap a reading to see the source photo, how it was dated and anything you corrected. You can edit or delete it from there.
 
-**Trends** shows a week or a month at a time. Blood pressure appears as rounded bars from diastolic up to systolic, coloured by category, with the Stage 1 thresholds marked. Below are the heart-rate and SpO₂ lines, a count of readings per category and a table of averages, minimums and maximums. The download button exports a CSV of all your readings, or a PDF summary of the period on screen.
+**Trends** shows a week or a month at a time. Blood pressure appears as rounded bars from diastolic up to systolic, coloured by category, with the Stage 1 thresholds marked. Below are the heart-rate and SpO₂ lines, a count of readings per category and a table of averages, minimums and maximums. The download button exports a CSV of all your readings, or a [PDF report](#pdf-report) for any range of dates.
 
 | | Today | History | Trends |
 |---|:---:|:---:|:---:|
@@ -56,6 +56,21 @@ The numbers then go to SYS, DIA and pulse, or SpO₂ and pulse, top to bottom, a
     <td><img src="docs/screenshots/dark-review.png" alt="Review screen, dark" width="250"></td>
   </tr>
 </table>
+
+### PDF report
+
+**Trends › download › PDF report…** opens a date range picker, starting on the period on screen, and shares an A4 report you can print or send to your doctor:
+
+- **Blood pressure:** a table of every reading, with date, time, systolic, diastolic, pulse and notes. After it come the blood pressure chart with the Stage 1 lines, the pulse chart, the category breakdown, and a summary of averages, lowest and highest values.
+- **Blood oxygen:** starts on a new page, with a table of date, time, oxygen (SpO₂) and notes, then the SpO₂ chart and its summary.
+
+Tables repeat their headings on each page, notes wrap onto up to three lines, and every page is numbered. Charts show a point per day for up to three months, then weekly or 30-day averages, so a long range stays readable. A section with no readings in the range says so.
+
+<p align="center">
+  <img src="docs/screenshots/report-1.png" alt="Report page 1: title, date range and the blood pressure table" width="32%">
+  <img src="docs/screenshots/report-3.png" alt="Report page 3: blood pressure, pulse and category charts, and the summary" width="32%">
+  <img src="docs/screenshots/report-4.png" alt="Report page 4: blood oxygen table, SpO₂ chart and summary" width="32%">
+</p>
 
 ### Categories
 
@@ -134,7 +149,7 @@ Each CI build's version code is its run number, so a newer build always installs
   - `data/`: Room and DataStore.
   - `extraction/`: reading photos and live camera frames (with ML Kit as the fallback), and EXIF.
   - `security/`: the app lock.
-  - `export/`: CSV and PDF.
+  - `export/`: CSV and the PDF report.
   - `ui/`: one package per screen.
 - `design/`: the original design handoff and its HTML mockups.
 - `docs/screenshots/`: the images in this README, rendered by `app/src/test/.../screenshots/ScreenshotTest.kt`.

@@ -1,5 +1,7 @@
 package com.cyberkryption.vitals.screenshots
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.net.Uri
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasClickAction
@@ -11,7 +13,10 @@ import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.core.app.ApplicationProvider
+import com.cyberkryption.vitals.core.Guideline
+import com.cyberkryption.vitals.core.Period
 import com.cyberkryption.vitals.data.RelockTimeout
+import com.cyberkryption.vitals.export.HealthReport
 import com.cyberkryption.vitals.review.ReviewItem
 import com.cyberkryption.vitals.ui.VitalsApp
 import com.cyberkryption.vitals.ui.lock.LockContent
@@ -35,6 +40,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import java.time.LocalDate
 
 private const val PHONE = "w412dp-h915dp-xhdpi"
 private const val FOLDABLE = "w720dp-h900dp-xhdpi"
@@ -92,6 +98,23 @@ class ScreenshotTest {
 
     @Test
     fun lockDark() = lock(dark = true)
+
+    /** Every page of a month's PDF report, drawn as the PDF draws it, at twice its size in points. */
+    @Test
+    fun report() {
+        val clock = app.container.clock
+        val today = LocalDate.now(clock)
+        val period = Period(today.minusDays(29), today)
+        val readings = runBlocking { app.container.readings.between(period.startInstant(clock.zone), period.endInstant(clock.zone)) }
+        HealthReport(app, clock.zone).pages(period, readings, Guideline.AHA, today).forEachIndexed { i, page ->
+            val bitmap = Bitmap.createBitmap(595 * 2, 842 * 2, Bitmap.Config.ARGB_8888)
+            Canvas(bitmap).apply {
+                scale(2f, 2f)
+                page(this)
+            }
+            bitmap.captureRoboImage(File(outDir, "report-${i + 1}.png").path, RoborazziOptions(taskType = RoborazziTaskType.Record))
+        }
+    }
 
     @Test
     fun capture() {
