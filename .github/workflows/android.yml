@@ -4,6 +4,8 @@ on:
   push:
     branches: [main, "claude/**"]
   pull_request:
+  # "Run workflow" on the Actions tab builds any branch on demand, e.g. after changing secrets.
+  workflow_dispatch:
 
 jobs:
   build:
