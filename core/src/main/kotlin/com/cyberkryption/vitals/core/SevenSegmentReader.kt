@@ -48,56 +48,238 @@ object SevenSegmentReader {
 
     fun read(image: GreyImage, displayHeight: Int = DISPLAY_HEIGHT): List<TextBox> {
         val work = image.fitWithin(WORK_SIDE)
-        val whole = Quad.of(Box(0f, 0f, work.width.toFloat(), work.height.toFloat()))
+        // The likeliest display areas, best first; whichever gives the most values wins, and a
+        // full set of blood pressure values ends the search.
+        var numbers = emptyList<TextBox>()
+        var best = Score(-1, -1)
+        for (quad in findDisplays(work)) {
+            val read = readQuad(work, quad, inset = 0.015f, displayHeight)
+            val score = score(read)
+            if (score > best) {
+                numbers = read
+                best = score
+            }
+            if (best.fields == ReadingType.BP.fields.size) break
+        }
         // A close-up or a tight crop has no bezel around the display, so the whole image is the fallback.
-        val display = findDisplay(work)
-        val fromDisplay = display?.let { readQuad(work, it, inset = 0.015f, displayHeight) }.orEmpty()
-        val numbers = if (fromDisplay.size >= 2) {
-            fromDisplay
-        } else {
-            val fromWhole = readQuad(work, whole, inset = 0f, displayHeight)
-            if (fromWhole.size > fromDisplay.size) fromWhole else fromDisplay
+        if (best.fields < 2) {
+            val whole = Quad.of(Box(0f, 0f, work.width.toFloat(), work.height.toFloat()))
+            val read = readQuad(work, whole, inset = 0f, displayHeight)
+            if (score(read) > best) numbers = read
         }
         val sx = image.width / work.width.toFloat()
         val sy = image.height / work.height.toFloat()
         return numbers.map { it.copy(bounds = Box(it.bounds.left * sx, it.bounds.top * sy, it.bounds.right * sx, it.bounds.bottom * sy)) }
     }
 
-    /** Corners of the biggest bright, solid, roughly rectangular patch that doesn't touch the edge. */
-    internal fun findDisplay(image: GreyImage): Quad? {
+    /** How good a read is: the most fields it fills as either monitor type, then how many numbers it found. */
+    private data class Score(val fields: Int, val numbers: Int) : Comparable<Score> {
+        override fun compareTo(other: Score) = compareValuesBy(this, other, Score::fields, Score::numbers)
+    }
+
+    private fun score(numbers: List<TextBox>) = Score(
+        ReadingType.entries.maxOf { DisplayParser.parse(numbers, it).detections.size },
+        numbers.size,
+    )
+
+    /**
+     * Where the display most likely is: up to three bright, solid, roughly rectangular patches that
+     * don't touch the edge, best first.
+     *
+     * - Bright bridges, such as a reflection on the bezel joining the display to a bright wall,
+     *   are broken first, gently and then harder.
+     * - A display lit unevenly can be dim at one end, so each patch is tried as found and also
+     *   grown into neighbouring pixels too dim to count as bright but well clear of the dark bezel.
+     * - Corners are where lines fitted along the four sides meet, so rounded corners, icons and
+     *   reflections don't skew the display when it's straightened.
+     */
+    internal fun findDisplays(image: GreyImage): List<Quad> {
         val small = image.fitWithin(FIND_SIDE)
         val w = small.width
         val h = small.height
         val smooth = boxMean(FloatArray(w * h) { (small.pixels[it].toInt() and 0xFF).toFloat() }, w, h, 2)
         val cut = otsu(IntArray(w * h) { smooth[it].toInt() })
-        val parts = Components(BooleanArray(w * h) { smooth[it] > cut }, w, h)
-        var best = -1
-        var bestScore = 0f
-        for (i in 0 until parts.count) {
-            val bw = parts.x1[i] - parts.x0[i] + 1
-            val bh = parts.y1[i] - parts.y0[i] + 1
-            if (parts.touchesEdge(i) || parts.area[i] < 0.02f * w * h) continue
-            val fill = parts.area[i] / (bw * bh).toFloat()
-            if (fill < 0.5f || bw / bh.toFloat() !in 0.4f..2.5f) continue
-            if (parts.area[i] * fill > bestScore) {
-                bestScore = parts.area[i] * fill
-                best = i
+        val bright = BooleanArray(w * h) { smooth[it] > cut }
+        val darkMean = smooth.filter { it <= cut }.average().toFloat().takeIf { !it.isNaN() } ?: 0f
+        // Dimmer than the display's bright part, but brighter than the bezel. Bright pixels are
+        // left out so growing can't cross a reflection into a bright wall.
+        val dim = BooleanArray(w * h) { smooth[it] > (darkMean + cut) / 2 && smooth[it] <= cut }
+        val sx = image.width / w.toFloat()
+        val sy = image.height / h.toFloat()
+        val found = mutableListOf<Pair<Float, Box>>()
+        val quads = mutableListOf<List<Quad>>()
+        for (radius in listOf(max(2, max(w, h) / 130), max(4, max(w, h) / 50))) {
+            val parts = Components(open(bright, w, h, radius), w, h)
+            for (i in 0 until parts.count) {
+                val bw = parts.x1[i] - parts.x0[i] + 1
+                val bh = parts.y1[i] - parts.y0[i] + 1
+                val fill = parts.area[i] / (bw * bh).toFloat()
+                if (parts.touchesEdge(i) || parts.area[i] < 0.02f * w * h || fill < 0.5f || bw / bh.toFloat() !in 0.4f..2.5f) continue
+                val box = Box(parts.x0[i].toFloat(), parts.y0[i].toFloat(), parts.x1[i] + 1f, parts.y1[i] + 1f)
+                // The same patch found again after the harder opening is a duplicate.
+                if (found.any { overlap(it.second, box) > 0.6f }) continue
+                found += parts.area[i] * fill to box
+                val patch = BooleanArray(w * h) { parts.labels[it] == i + 1 }
+                val grown = grow(parts, i + 1, dim, w, h)
+                // The patch as found, then grown if that added much; reading decides between them.
+                val shapes = if (grown.count { it } > 1.1f * parts.area[i]) listOf(patch, grown) else listOf(patch)
+                quads += shapes.map { region ->
+                    val q = fitQuad(region, w, h)
+                    Quad(q.topLeft.scaled(sx, sy), q.topRight.scaled(sx, sy), q.bottomRight.scaled(sx, sy), q.bottomLeft.scaled(sx, sy))
+                }
             }
         }
-        if (best < 0) return null
-        // The corners are the patch's extremes along the two diagonals.
+        return found.indices.sortedByDescending { found[it].first }.take(3).flatMap { quads[it] }
+    }
+
+    /** Shared area over the smaller box's area. */
+    private fun overlap(a: Box, b: Box): Float {
+        val w = min(a.right, b.right) - max(a.left, b.left)
+        val h = min(a.bottom, b.bottom) - max(a.top, b.top)
+        if (w <= 0 || h <= 0) return 0f
+        return w * h / min(a.width * a.height, b.width * b.height)
+    }
+
+    /** Opening: shrinks a mask by [r] pixels and grows it back, dropping anything thinner than that. */
+    private fun open(mask: BooleanArray, w: Int, h: Int, r: Int): BooleanArray {
+        fun counts(m: BooleanArray) = boxMean(FloatArray(w * h) { if (m[it]) 1f else 0f }, w, h, r)
+        val shrunk = counts(mask).let { mean -> BooleanArray(w * h) { mean[it] > 0.999f } }
+        return counts(shrunk).let { mean -> BooleanArray(w * h) { mean[it] > 0.001f } }
+    }
+
+    /** The patch labelled [label], grown into connected [dim] pixels no further than a third of its size beyond it. */
+    private fun grow(parts: Components, label: Int, dim: BooleanArray, w: Int, h: Int): BooleanArray {
+        val i = label - 1
+        val reachX = (parts.x1[i] - parts.x0[i] + 1) / 3
+        val reachY = (parts.y1[i] - parts.y0[i] + 1) / 3
+        val minX = max(0, parts.x0[i] - reachX)
+        val maxX = min(w - 1, parts.x1[i] + reachX)
+        val minY = max(0, parts.y0[i] - reachY)
+        val maxY = min(h - 1, parts.y1[i] + reachY)
+        val region = BooleanArray(w * h)
+        val queue = IntArray(w * h)
+        var tail = 0
+        for (p in region.indices) {
+            if (parts.labels[p] == label) {
+                region[p] = true
+                queue[tail++] = p
+            }
+        }
+        var head = 0
+        while (head < tail) {
+            val p = queue[head++]
+            val x = p % w
+            val y = p / w
+            for (n in intArrayOf(if (x > minX) p - 1 else -1, if (x < maxX) p + 1 else -1, if (y > minY) p - w else -1, if (y < maxY) p + w else -1)) {
+                if (n >= 0 && !region[n] && dim[n]) {
+                    region[n] = true
+                    queue[tail++] = n
+                }
+            }
+        }
+        return region
+    }
+
+    /**
+     * The quad where lines fitted to the region's four sides meet. Each side is sampled along its
+     * middle 70%, away from rounded corners. Falls back to the region's extreme points if a side
+     * can't be fitted.
+     */
+    private fun fitQuad(region: BooleanArray, w: Int, h: Int): Quad {
+        var x0 = w
+        var y0 = h
+        var x1 = -1
+        var y1 = -1
+        for (p in region.indices) {
+            if (!region[p]) continue
+            val x = p % w
+            val y = p / w
+            if (x < x0) x0 = x
+            if (x > x1) x1 = x
+            if (y < y0) y0 = y
+            if (y > y1) y1 = y
+        }
+        fun at(x: Int, y: Int) = region[y * w + x]
+        val xs = middle(x0, x1)
+        val ys = middle(y0, y1)
+        val top = xs.mapNotNull { x -> (y0..y1).firstOrNull { at(x, it) }?.let { x.toFloat() to it.toFloat() } }
+        val bottom = xs.mapNotNull { x -> (y1 downTo y0).firstOrNull { at(x, it) }?.let { x.toFloat() to it + 1f } }
+        val left = ys.mapNotNull { y -> (x0..x1).firstOrNull { at(it, y) }?.let { y.toFloat() to it.toFloat() } }
+        val right = ys.mapNotNull { y -> (x1 downTo x0).firstOrNull { at(it, y) }?.let { y.toFloat() to it + 1f } }
+        val t = fitEdge(top)
+        val b = fitEdge(bottom)
+        val l = fitEdge(left)
+        val r = fitEdge(right)
+        if (t == null || b == null || l == null || r == null) return extremes(region, w, x0, y0, x1, y1)
+        // y = t.a + t.b·x meets x = l.a + l.b·y
+        fun meet(row: Pair<Float, Float>, col: Pair<Float, Float>): Point {
+            val x = (col.first + col.second * row.first) / (1 - row.second * col.second)
+            return Point(x, row.first + row.second * x)
+        }
+        return Quad(meet(t, l), meet(t, r), meet(b, r), meet(b, l))
+    }
+
+    private fun middle(from: Int, to: Int): IntRange {
+        val margin = ((to - from) * 0.15f).roundToInt()
+        return (from + margin)..(to - margin)
+    }
+
+    /**
+     * The line v = a + b·u along one side of a patch, from its (u, v) edge points: the straight
+     * line the most points lie on, refitted to them. Icons and digits cut into a side and
+     * reflections bulge out of it, but only along part of it. Null with too few points.
+     */
+    private fun fitEdge(points: List<Pair<Float, Float>>): Pair<Float, Float>? {
+        if (points.size < 5) return null
+        val step = max(1, points.size / 40)
+        val sample = points.filterIndexed { k, _ -> k % step == 0 }
+        val span = points.last().first - points.first().first
+        var best: Pair<Float, Float>? = null
+        var bestCount = -1
+        for (i in sample.indices) {
+            for (j in i + 1 until sample.size) {
+                val (u1, v1) = sample[i]
+                val (u2, v2) = sample[j]
+                if (abs(u2 - u1) < 0.2f * abs(span)) continue
+                val slope = (v2 - v1) / (u2 - u1)
+                if (abs(slope) > 1f) continue
+                val line = v1 - slope * u1 to slope
+                val count = points.count { abs(it.second - (line.first + line.second * it.first)) <= 1.5f }
+                if (count > bestCount) {
+                    bestCount = count
+                    best = line
+                }
+            }
+        }
+        val line = best ?: return null
+        val inliers = points.filter { abs(it.second - (line.first + line.second * it.first)) <= 1.5f }
+        return leastSquares(inliers) ?: line
+    }
+
+    private fun leastSquares(points: List<Pair<Float, Float>>): Pair<Float, Float>? {
+        if (points.size < 2) return null
+        val mu = points.sumOf { it.first.toDouble() } / points.size
+        val mv = points.sumOf { it.second.toDouble() } / points.size
+        val suu = points.sumOf { (it.first - mu) * (it.first - mu) }
+        if (suu == 0.0) return null
+        val slope = points.sumOf { (it.first - mu) * (it.second - mv) } / suu
+        return (mv - slope * mu).toFloat() to slope.toFloat()
+    }
+
+    /** The region's extremes along the two diagonals, as corners. */
+    private fun extremes(region: BooleanArray, w: Int, x0: Int, y0: Int, x1: Int, y1: Int): Quad {
         val corners = arrayOfNulls<Point>(4)
-        val extremes = floatArrayOf(Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE, Float.MAX_VALUE)
-        for (y in 0 until h) {
-            for (x in 0 until w) {
-                if (parts.labels[y * w + x] != best + 1) continue
+        val best = floatArrayOf(Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE, Float.MAX_VALUE)
+        for (y in y0..y1) {
+            for (x in x0..x1) {
+                if (!region[y * w + x]) continue
                 val sum = (x + y).toFloat()
                 val diff = (x - y).toFloat()
-                val p = Point((x + 0.5f) * image.width / w, (y + 0.5f) * image.height / h)
-                if (sum < extremes[0]) { extremes[0] = sum; corners[0] = p }
-                if (diff > extremes[1]) { extremes[1] = diff; corners[1] = p }
-                if (sum > extremes[2]) { extremes[2] = sum; corners[2] = p }
-                if (diff < extremes[3]) { extremes[3] = diff; corners[3] = p }
+                val p = Point(x + 0.5f, y + 0.5f)
+                if (sum < best[0]) { best[0] = sum; corners[0] = p }
+                if (diff > best[1]) { best[1] = diff; corners[1] = p }
+                if (sum > best[2]) { best[2] = sum; corners[2] = p }
+                if (diff < best[3]) { best[3] = diff; corners[3] = p }
             }
         }
         return Quad(corners[0]!!, corners[1]!!, corners[2]!!, corners[3]!!)
@@ -137,12 +319,21 @@ object SevenSegmentReader {
         return BooleanArray(w * h) { ratio[it] < cut }
     }
 
-    /** Drops the bezel's shadow along the edges and specks of noise. */
+    /**
+     * Drops the bezel's shadow along the edges, specks of noise, and solid blocks such as a level
+     * bar's squares, which can sit between two rows of digits and join them. Segments are long and
+     * thin, so they stay.
+     */
     private fun clean(dark: BooleanArray, w: Int, h: Int): BooleanArray {
         val parts = Components(dark, w, h)
         val minArea = 0.00005f * w * h
         val keep = BooleanArray(parts.count + 1)
-        for (i in 0 until parts.count) keep[i + 1] = !parts.touchesEdge(i) && parts.area[i] > minArea
+        for (i in 0 until parts.count) {
+            val bw = parts.x1[i] - parts.x0[i] + 1
+            val bh = parts.y1[i] - parts.y0[i] + 1
+            val block = parts.area[i] > 0.8f * bw * bh && max(bw, bh) < 1.8f * min(bw, bh)
+            keep[i + 1] = !parts.touchesEdge(i) && parts.area[i] > minArea && !block
+        }
         return BooleanArray(w * h) { keep[parts.labels[it]] }
     }
 
@@ -165,12 +356,17 @@ object SevenSegmentReader {
 
         val found = mutableListOf<Number>()
         for ((index, row) in rows.withIndex()) {
-            val (top, bottom) = row
-            val height = bottom - top + 1
-            val cells = cellsByRow[index].flatMap { split(dark, w, top, bottom, it, aspect * height) }
+            val (bandTop, bandBottom) = row
+            val height = bandBottom - bandTop + 1
+            val cells = cellsByRow[index].flatMap { split(dark, w, bandTop, bandBottom, it, aspect * height) }
             if (cells.isEmpty()) continue
             val widest = cells.maxOf { it.width }
             val cellWidth = if (widest >= 0.3f * height) widest else (aspect * height).roundToInt()
+            // The digits' own top and bottom, from the full-width ones: a mark reaching into the
+            // band, such as a level bar's square, doesn't stretch them.
+            val extents = cells.filter { it.width >= 0.45f * cellWidth }.map { extent(dark, w, it, bandTop, bandBottom) }
+            val top = extents.minOfOrNull { it.first } ?: bandTop
+            val bottom = extents.maxOfOrNull { it.second } ?: bandBottom
 
             val digits = StringBuilder()
             var left = 0
@@ -219,7 +415,10 @@ object SevenSegmentReader {
      */
     private fun digitRows(dark: BooleanArray, w: Int, h: Int): List<Pair<Int, Int>> {
         val profile = IntArray(h) { y -> (0 until w).count { dark[y * w + it] } }
-        val bands = runs(profile, 2).flatMap { splitAtNecks(profile, it, h) }.filter { (a, b) -> b - a >= 0.03f * h }
+        val bands = runs(profile, 2)
+            .flatMap { splitBesideMarks(dark, w, it) }
+            .flatMap { splitAtNecks(profile, it, h) }
+            .filter { (a, b) -> b - a >= 0.03f * h }
         if (bands.isEmpty()) return emptyList()
         val widest = bands.map { (a, b) -> digitCells(dark, w, a, b).maxOfOrNull { it.width } ?: 0 }
         val digitWidth = widest.max()
@@ -250,6 +449,27 @@ object SevenSegmentReader {
     }
 
     /**
+     * Splits a band that two rows of digits share only through a narrow mark beside them, such as
+     * a level bar's square lying across the gap: the band's rows are found again without the
+     * columns of narrow marks wholly outside its full-width digits.
+     */
+    private fun splitBesideMarks(dark: BooleanArray, w: Int, band: Pair<Int, Int>): List<Pair<Int, Int>> {
+        val (top, bottom) = band
+        val columns = runs(IntArray(w) { x -> (top..bottom).count { dark[it * w + x] } }, 1)
+        if (columns.size < 2) return listOf(band)
+        val widest = columns.maxOf { it.second - it.first + 1 }
+        val wide = columns.filter { it.second - it.first + 1 >= 0.45f * widest }
+        val from = wide.minOf { it.first }
+        val to = wide.maxOf { it.second }
+        val beside = columns.filter { it.second < from || it.first > to }
+        if (beside.isEmpty()) return listOf(band)
+        val skip = BooleanArray(w)
+        for ((a, b) in beside) for (x in a..b) skip[x] = true
+        val profile = IntArray(bottom - top + 1) { i -> (0 until w).count { x -> !skip[x] && dark[(top + i) * w + x] } }
+        return runs(profile, 2).map { (a, b) -> top + a to top + b }
+    }
+
+    /**
      * Splits a band where it narrows to a thin neck for a few rows: a row of digits joined to an
      * icon or label below it by a thin line.
      */
@@ -277,6 +497,19 @@ object SevenSegmentReader {
         }
         out += start to bottom
         return out
+    }
+
+    /** The first and last rows of the band with anything dark in the cell's columns. */
+    private fun extent(dark: BooleanArray, w: Int, cell: Cell, top: Int, bottom: Int): Pair<Int, Int> {
+        var first = -1
+        var last = -1
+        for (y in top..bottom) {
+            if ((cell.left..cell.right).any { dark[y * w + it] }) {
+                if (first < 0) first = y
+                last = y
+            }
+        }
+        return if (first < 0) top to bottom else first to last
     }
 
     /** Splits a cell much wider than one digit at its emptiest columns: digits that have run together. */
@@ -406,7 +639,9 @@ object SevenSegmentReader {
     }
 }
 
-internal data class Point(val x: Float, val y: Float)
+internal data class Point(val x: Float, val y: Float) {
+    fun scaled(sx: Float, sy: Float) = Point(x * sx, y * sy)
+}
 
 /** A four-cornered area of an image: top left, top right, bottom right, bottom left. */
 internal data class Quad(val topLeft: Point, val topRight: Point, val bottomRight: Point, val bottomLeft: Point) {

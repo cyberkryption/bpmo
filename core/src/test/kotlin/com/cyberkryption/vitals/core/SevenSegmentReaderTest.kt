@@ -79,6 +79,24 @@ class SevenSegmentReaderTest {
         assertTrue(failures.isEmpty(), failures.joinToString())
     }
 
+    /** Layouts and lighting seen in real photos of a monitor that once defeated the reader. */
+    @Test
+    fun copesWithRealWorldLayouts() {
+        val cases = mapOf(
+            // The level bar beside DIA starts in the gap between the SYS and DIA rows.
+            "level bar between rows" to (monitor(148, 99, 78, barTop = 730) to listOf(148, 99, 78)),
+            // Lit from above, the foot of the display is dimmer than the wall behind (greys as measured).
+            "display dim at the foot" to (monitor(128, 82, 107, lcdBottom = 80, wall = 235, bezel = 10) to listOf(128, 82, 107)),
+            "reflection joining display and wall" to (monitor(162, 103, 79, reflection = true) to listOf(162, 103, 79)),
+            "all of these, tilted" to (rotate(monitor(144, 99, 84, barTop = 730, lcdBottom = 80, wall = 230, bezel = 10, reflection = true), 6.0) to listOf(144, 99, 84)),
+        )
+        val failures = cases.mapNotNull { (name, case) ->
+            val (image, expected) = case
+            bp(image).takeIf { it != expected }?.let { "$name read $it" }
+        }
+        assertTrue(failures.isEmpty(), failures.joinToString())
+    }
+
     @Test
     fun aCloseUpWithoutBezelIsReadWhole() {
         val base = monitor(136, 92, 88)
@@ -103,8 +121,9 @@ class SevenSegmentReaderTest {
             javaClass.getResource("/displays")?.toURI()?.let(::File),
             System.getProperty("displayPhotos")?.let(::File),
         )
+        val named = Regex("(bp-\\d+-\\d+-\\d+|ox-\\d+-\\d+)(-.*)?")
         val photos = folders.flatMap { it.listFiles()?.toList().orEmpty() }
-            .filter { it.extension.lowercase() in setOf("jpg", "jpeg", "png") }
+            .filter { it.extension.lowercase() in setOf("jpg", "jpeg", "png") && named.matches(it.nameWithoutExtension) }
         val failures = photos.mapNotNull { photo ->
             val parts = photo.nameWithoutExtension.split('-')
             val type = if (parts[0] == "ox") ReadingType.OXIMETER else ReadingType.BP
@@ -133,19 +152,37 @@ class SevenSegmentReaderTest {
 
         /**
          * A stand-in BP monitor photo: a wall, a dark bezel, an LCD lit unevenly from the top, the
-         * clock, SYS and DIA right-aligned in large digits, a level bar beside SYS, a heart icon and
-         * the pulse in smaller digits.
+         * clock, SYS and DIA right-aligned in large digits, a level bar of three near-square blocks
+         * starting at [barTop], a heart icon and the pulse in smaller digits. [lcdBottom] is the LCD's grey at
+         * its foot, [wall] the wall's at the top and [bezel] the bezel's, and [reflection] adds a
+         * light's reflection across the bezel joining the LCD to the wall.
          */
-        fun monitor(sys: Int, dia: Int, pulse: Int): BufferedImage {
+        fun monitor(
+            sys: Int,
+            dia: Int,
+            pulse: Int,
+            barTop: Int = 530,
+            lcdBottom: Int = 118,
+            wall: Int = 200,
+            bezel: Int = 28,
+            reflection: Boolean = false,
+        ): BufferedImage {
             val image = BufferedImage(1200, 1600, BufferedImage.TYPE_INT_RGB)
             val g = image.createGraphics()
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-            g.paint = GradientPaint(0f, 0f, Color(200, 190, 195), 0f, 1600f, Color(70, 65, 70))
+            g.paint = GradientPaint(0f, 0f, Color(wall, wall - 10, wall - 5), 0f, 1600f, Color(70, 65, 70))
             g.fillRect(0, 0, 1200, 1600)
-            g.color = Color(28, 28, 30)
+            g.color = Color(bezel, bezel, bezel + 2)
             g.fillRoundRect(150, 250, 900, 1250, 120, 120)
-            g.paint = GradientPaint(0f, 420f, Color(212, 214, 208), 0f, 1210f, Color(118, 120, 116))
+            g.paint = GradientPaint(0f, 420f, Color(212, 214, 208), 0f, 1210f, Color(lcdBottom, lcdBottom + 2, lcdBottom - 2))
             g.fillRect(300, 420, 600, 790)
+            if (reflection) {
+                // A streak of light across the bezel's corner, from the wall to the LCD.
+                g.color = Color(240, 240, 238)
+                g.stroke = java.awt.BasicStroke(44f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND)
+                g.drawLine(120, 300, 320, 450)
+                g.stroke = java.awt.BasicStroke(1f)
+            }
             g.color = Color(52, 56, 60)
             number(g, 12, right = 520, top = 440, height = 40)
             g.fillRect(535, 450, 6, 6)
@@ -154,7 +191,7 @@ class SevenSegmentReaderTest {
             number(g, sys, right = 850, top = 520, height = 230)
             number(g, dia, right = 850, top = 790, height = 230)
             number(g, pulse, right = 850, top = 1050, height = 110)
-            for (i in 0 until 3) g.fillRect(866, 530 + i * 75, 22, 55)
+            for (i in 0 until 3) g.fillRect(860, barTop + i * 60, 30, 42)
             g.fillOval(560, 1080, 50, 45)
             g.fillRect(330, 1140, 40, 18)
             g.dispose()
