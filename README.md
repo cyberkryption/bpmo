@@ -68,7 +68,7 @@ Tables repeat their headings on each page, notes wrap onto up to three lines, an
 
 <p align="center">
   <img src="docs/screenshots/report-1.png" alt="Report page 1: title, date range and the blood pressure table" width="32%">
-  <img src="docs/screenshots/report-2.png" alt="Report page 2: the rest of the table and the blood pressure chart" width="32%">
+  <img src="docs/screenshots/report-3.png" alt="Report page 3: blood pressure, pulse and category charts, and the summary" width="32%">
   <img src="docs/screenshots/report-4.png" alt="Report page 4: blood oxygen table, SpO₂ chart and summary" width="32%">
 </p>
 
