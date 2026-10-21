@@ -10,34 +10,43 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.cyberkryption.vitals.R
+import com.cyberkryption.vitals.ui.theme.Vitals
 import com.cyberkryption.vitals.ui.theme.VitalsType
 
-/** Top-level screen header: optional kicker above a 30sp title, actions on the right. */
+/** Top-level screen header: a large title with an optional subtitle, actions on the right. */
 @Composable
 fun ScreenHeader(
     title: String,
     modifier: Modifier = Modifier,
-    kicker: String? = null,
+    subtitle: String? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Row(
-        modifier = modifier.padding(start = 20.dp, top = 12.dp, end = 8.dp, bottom = 4.dp),
+        modifier = modifier.padding(start = 20.dp, top = 16.dp, end = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
-            if (kicker != null) Kicker(kicker)
-            Text(title, style = VitalsType.screenTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                title,
+                style = VitalsType.screenTitle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics { heading() },
+            )
+            if (subtitle != null) Text(subtitle, style = VitalsType.subtitle, color = Vitals.colors.muted, maxLines = 1)
         }
         actions()
     }
 }
 
-/** Sub-screen app bar: back or close, a 22sp title, trailing actions. */
+/** Sub-screen app bar: back or close, a title, trailing actions. */
 @Composable
 fun AppBar(
     title: String,
@@ -68,7 +77,8 @@ fun AppBar(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .weight(1f)
-                .padding(start = if (onBack != null) titleStartPadding else 16.dp),
+                .padding(start = if (onBack != null) titleStartPadding else 16.dp)
+                .semantics { heading() },
         )
         actions()
     }

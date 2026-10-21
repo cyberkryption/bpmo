@@ -35,26 +35,29 @@ class DateFormats(val locale: Locale, is24Hour: Boolean, val zone: ZoneId) {
     private val timePattern = if (is24Hour) "HH:mm" else "h:mm a"
     private val secondsPattern = if (is24Hour) "HH:mm:ss" else "h:mm:ss a"
 
-    /** Tue 20 Oct */
-    val day: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM", locale)
+    /** The locale's own order for a skeleton: "Tue, Oct 20" in the US, "Tue 20 Oct" in the UK. */
+    private fun best(skeleton: String): String = DateFormat.getBestDateTimePattern(locale, skeleton)
 
-    /** Tue 20 Oct 2026 */
-    val dayWithYear: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM yyyy", locale)
+    /** Tue, Oct 20 */
+    val day: DateTimeFormatter = DateTimeFormatter.ofPattern(best("EEEMMMd"), locale)
 
-    /** 08:14 */
+    /** Tue, Oct 20, 2026 */
+    val dayWithYear: DateTimeFormatter = DateTimeFormatter.ofPattern(best("EEEMMMdyyyy"), locale)
+
+    /** 8:14 AM */
     val time: DateTimeFormatter = DateTimeFormatter.ofPattern(timePattern, locale)
 
-    /** Tue 08:14 */
+    /** Tue 8:14 AM */
     val weekdayTime: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE $timePattern", locale)
 
-    /** 28 Sep 08:20 */
-    val dayMonthTime: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM $timePattern", locale)
+    /** Sep 28, 8:20 AM */
+    val dayMonthTime: DateTimeFormatter = DateTimeFormatter.ofPattern("${best("MMMd")}, $timePattern", locale)
 
-    /** Tue 20 Oct 2026, 08:14 */
-    val full: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM yyyy, $timePattern", locale)
+    /** Tue, Oct 20, 2026, 8:14 AM */
+    val full: DateTimeFormatter = DateTimeFormatter.ofPattern("${best("EEEMMMdyyyy")}, $timePattern", locale)
 
-    /** Tue 20 Oct 2026, 08:14:03 */
-    val fullSeconds: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM yyyy, $secondsPattern", locale)
+    /** Tue, Oct 20, 2026, 8:14:03 AM */
+    val fullSeconds: DateTimeFormatter = DateTimeFormatter.ofPattern("${best("EEEMMMdyyyy")}, $secondsPattern", locale)
 
     fun date(instant: Instant): LocalDate = instant.atZone(zone).toLocalDate()
 

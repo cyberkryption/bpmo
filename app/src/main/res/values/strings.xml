@@ -6,14 +6,15 @@
     <string name="nav_today">Today</string>
     <string name="nav_history">History</string>
     <string name="nav_trends">Trends</string>
+    <string name="nav_settings">Settings</string>
 
     <!-- Actions -->
     <string name="action_back">Back</string>
     <string name="action_close">Close</string>
     <string name="action_close_search">Close search</string>
-    <string name="action_more">More</string>
     <string name="action_scan">Scan reading</string>
     <string name="action_import">Import photos</string>
+    <string name="action_import_short">Import</string>
     <string name="action_see_all">See all</string>
     <string name="action_search">Search</string>
     <string name="action_export">Export</string>
@@ -46,6 +47,8 @@
     <string name="unit_bp_with_pulse">mmHg · %1$d bpm</string>
     <string name="unit_spo2_with_pulse">SpO₂ · %1$d bpm</string>
     <string name="value_none">—</string>
+    <string name="range">%1$d–%2$d</string>
+    <string name="a11y_bp_value">%1$d over %2$d millimetres of mercury</string>
     <string name="list_and">" and "</string>
 
     <!-- Categories (AHA, adult) -->
@@ -66,27 +69,22 @@
     <!-- Ranges -->
     <string name="span_7_days">7 days</string>
     <string name="span_30_days">30 days</string>
-    <string name="span_7_day">7-day</string>
-    <string name="span_30_day">30-day</string>
     <string name="span_week">Week</string>
     <string name="span_month">Month</string>
 
     <!-- Dashboard -->
-    <string name="dashboard_bp_kicker">Blood pressure · %1$s avg</string>
+    <string name="dashboard_bp_title">Average blood pressure</string>
     <plurals name="dashboard_readings">
         <item quantity="one">%d reading</item>
         <item quantity="other">%d readings</item>
     </plurals>
-    <string name="dashboard_sys_range">SYS %1$d–%2$d</string>
-    <string name="dashboard_dia_range">DIA %1$d–%2$d</string>
-    <string name="dashboard_hr_range">Range %1$d–%2$d</string>
-    <string name="dashboard_spo2_lowest">Lowest %1$d%%</string>
     <string name="dashboard_no_data">No readings yet</string>
     <string name="dashboard_empty_week">No blood pressure readings in the last 7 days</string>
     <string name="dashboard_empty_month">No blood pressure readings in the last 30 days</string>
-    <string name="dashboard_latest">Latest</string>
+    <string name="dashboard_recent">Recent readings</string>
     <string name="dashboard_latest_empty">No readings yet. Scan a monitor or import photos to get started.</string>
-    <string name="today_at">Today %1$s</string>
+    <string name="yesterday_at">Yesterday, %1$s</string>
+    <string name="day_at">%1$s, %2$s</string>
     <string name="lock_offer_title">Lock Vitals?</string>
     <string name="lock_offer_body">Require your fingerprint, face or screen lock to open the app. You can change this in Settings.</string>
     <string name="lock_offer_confirm">Turn on</string>

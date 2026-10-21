@@ -33,7 +33,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
@@ -64,22 +66,24 @@ import com.cyberkryption.vitals.core.Validation
 import com.cyberkryption.vitals.extraction.ExifTag
 import com.cyberkryption.vitals.extraction.OcrResult
 import com.cyberkryption.vitals.ui.components.AppBar
-import com.cyberkryption.vitals.ui.components.BlueprintFrame
 import com.cyberkryption.vitals.ui.components.ChipStyle
 import com.cyberkryption.vitals.ui.components.ChoiceChip
 import com.cyberkryption.vitals.ui.components.DialogText
-import com.cyberkryption.vitals.ui.components.OutlineButton
+import com.cyberkryption.vitals.ui.components.IconCircle
+import com.cyberkryption.vitals.ui.components.PhotoFrame
 import com.cyberkryption.vitals.ui.components.PrimaryButton
+import com.cyberkryption.vitals.ui.components.SecondaryButton
 import com.cyberkryption.vitals.ui.components.Segmented
-import com.cyberkryption.vitals.ui.components.StatusTag
+import com.cyberkryption.vitals.ui.components.StatusBadge
 import com.cyberkryption.vitals.ui.components.TextAction
 import com.cyberkryption.vitals.ui.components.VitalsDialog
-import com.cyberkryption.vitals.ui.components.bottomRule
+import com.cyberkryption.vitals.ui.components.cardSurface
 import com.cyberkryption.vitals.ui.components.topRule
 import com.cyberkryption.vitals.ui.fieldLabel
 import com.cyberkryption.vitals.ui.rememberDateFormats
 import com.cyberkryption.vitals.ui.theme.ToneColors
 import com.cyberkryption.vitals.ui.theme.Vitals
+import com.cyberkryption.vitals.ui.theme.VitalsShape
 import com.cyberkryption.vitals.ui.theme.VitalsType
 import kotlin.math.roundToInt
 
@@ -107,8 +111,8 @@ fun ReviewScreen(
                 Text(
                     stringResource(R.string.review_counter, s.index + 1, s.count),
                     style = VitalsType.action.copy(fontFeatureSettings = "tnum"),
-                    color = c.accent700,
-                    modifier = Modifier.padding(end = 4.dp),
+                    color = c.primaryInk,
+                    modifier = Modifier.padding(end = 8.dp),
                 )
             }
         }
@@ -119,7 +123,7 @@ fun ReviewScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             PhotoWithDetections(s.item.photoUri.toString(), s.ocr, s.form, reading = s.form == null)
             val form = s.form ?: return@Column
@@ -130,7 +134,6 @@ fun ReviewScreen(
                 ),
                 selected = form.type,
                 onSelect = viewModel::setType,
-                height = 44.dp,
                 fillWidth = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -138,8 +141,8 @@ fun ReviewScreen(
             Warnings(form, isEdit = s.isEdit, hadOcr = s.ocr?.boxes?.isNotEmpty() == true)
             form.status?.let { status ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(stringResource(R.string.review_category), style = VitalsType.meta, color = c.text(0.7f))
-                    StatusTag(status, long = true)
+                    Text(stringResource(R.string.review_category), style = VitalsType.label, color = c.muted)
+                    StatusBadge(status, long = true)
                 }
             }
             TimestampRow(form, s.item.exifTag, onChange = { picking = true })
@@ -154,7 +157,7 @@ fun ReviewScreen(
                 .padding(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlineButton(
+            SecondaryButton(
                 text = stringResource(if (s.isEdit) R.string.action_cancel else R.string.action_skip),
                 onClick = { if (s.isEdit) viewModel.discard() else viewModel.skip() },
             )
@@ -198,9 +201,15 @@ fun ReviewScreen(
 @Composable
 private fun Progress(index: Int, count: Int) {
     val c = Vitals.colors
-    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         repeat(count) { i ->
-            Box(Modifier.weight(1f).height(3.dp).background(if (i <= index) c.accent else c.divider))
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(4.dp)
+                    .clip(VitalsShape.pill)
+                    .background(if (i <= index) c.primary else c.surfaceVariant),
+            )
         }
     }
 }
@@ -209,12 +218,12 @@ private fun Progress(index: Int, count: Int) {
 @Composable
 private fun PhotoWithDetections(uri: String, ocr: OcrResult?, form: ReviewForm?, reading: Boolean) {
     val c = Vitals.colors
-    BlueprintFrame(Modifier.fillMaxWidth().aspectRatio(4f / 3f)) {
+    PhotoFrame(Modifier.fillMaxWidth().aspectRatio(4f / 3f)) {
         AsyncImage(
             model = uri,
             contentDescription = stringResource(R.string.detail_photo),
             contentScale = ContentScale.Fit,
-            modifier = Modifier.matchParentSize().padding(1.dp),
+            modifier = Modifier.matchParentSize(),
         )
         if (ocr != null && form != null && ocr.width > 0 && ocr.height > 0) {
             BoxWithConstraints(Modifier.matchParentSize()) {
@@ -224,7 +233,7 @@ private fun PhotoWithDetections(uri: String, ocr: OcrResult?, form: ReviewForm?,
                 form.fields.forEach { field ->
                     val detection = form.detections[field] ?: return@forEach
                     val b = detection.bounds ?: return@forEach
-                    val tone = if (detection.isLowConfidence) c.warning.base else c.accent
+                    val tone = if (detection.isLowConfidence) c.warning.base else c.primary
                     DetectionBox(
                         label = stringResource(boxLabel(field)),
                         x = (dx + b.left * scale).dp,
@@ -232,7 +241,7 @@ private fun PhotoWithDetections(uri: String, ocr: OcrResult?, form: ReviewForm?,
                         width = (b.width * scale).dp,
                         height = (b.height * scale).dp,
                         color = tone,
-                        labelColor = if (detection.isLowConfidence) Color.White else c.bg,
+                        labelColor = if (detection.isLowConfidence) Color.White else c.onPrimary,
                         dashed = detection.isLowConfidence,
                     )
                 }
@@ -244,9 +253,9 @@ private fun PhotoWithDetections(uri: String, ocr: OcrResult?, form: ReviewForm?,
                 style = VitalsType.control,
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .background(c.bg.copy(alpha = 0.85f))
-                    .border(1.dp, c.divider)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .clip(VitalsShape.pill)
+                    .background(c.surface.copy(alpha = 0.92f))
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
             )
         }
     }
@@ -268,24 +277,26 @@ private fun DetectionBox(
             .offset(x, y)
             .size(width, height)
             .drawBehind {
-                val stroke = 1.5.dp.toPx()
-                drawRect(
+                val stroke = 2.dp.toPx()
+                drawRoundRect(
                     color = color,
+                    cornerRadius = CornerRadius(6.dp.toPx()),
                     style = Stroke(
                         width = stroke,
-                        pathEffect = if (dashed) PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())) else null,
+                        pathEffect = if (dashed) PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx())) else null,
                     ),
                 )
             },
     )
     Text(
         label,
-        style = VitalsType.tag.copy(letterSpacing = VitalsType.overline.letterSpacing),
+        style = VitalsType.badgeSmall,
         color = labelColor,
         modifier = Modifier
-            .offset(x, (y - 18.dp).coerceAtLeast(0.dp))
+            .offset(x, (y - 22.dp).coerceAtLeast(0.dp))
+            .clip(VitalsShape.pill)
             .background(color)
-            .padding(horizontal = 4.dp, vertical = 1.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp),
     )
 }
 
@@ -343,28 +354,29 @@ private fun ValueField(
         else -> unit
     }
 
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        Text(stringResource(fieldLabel(field)), style = VitalsType.meta, color = tone?.ink ?: c.text(0.7f), maxLines = 1)
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(stringResource(fieldLabel(field)), style = VitalsType.label, color = tone?.ink ?: c.muted, maxLines = 1)
         BasicTextField(
             value = form.input(field),
             onValueChange = onValueChange,
             singleLine = true,
             textStyle = VitalsType.inputValue.copy(color = c.text),
-            cursorBrush = SolidColor(c.accent),
+            cursorBrush = SolidColor(c.primary),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = imeAction),
             decorationBox = { inner ->
                 Box(
                     Modifier
                         .fillMaxWidth()
+                        .clip(VitalsShape.input)
                         .background(if (tone != null) tone.base.copy(alpha = 0.10f).compositeOver(c.surface) else c.surface)
-                        .border(if (tone != null) 1.5.dp else 1.dp, tone?.base ?: c.divider)
-                        .heightIn(min = 56.dp)
-                        .padding(horizontal = 10.dp),
+                        .border(if (tone != null) 1.5.dp else 1.dp, tone?.base ?: c.border, VitalsShape.input)
+                        .heightIn(min = 58.dp)
+                        .padding(horizontal = 14.dp),
                     contentAlignment = Alignment.CenterStart,
                 ) { inner() }
             },
         )
-        Text(caption, style = VitalsType.caption, color = tone?.ink ?: c.text(0.55f), maxLines = 1)
+        Text(caption, style = VitalsType.caption, color = tone?.ink ?: c.muted, maxLines = 1)
     }
 }
 
@@ -383,8 +395,9 @@ private fun Warnings(form: ReviewForm, isEdit: Boolean, hadOcr: Boolean) {
     Row(
         Modifier
             .fillMaxWidth()
-            .background(c.warning.base.copy(alpha = 0.12f))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .clip(VitalsShape.item)
+            .background(c.warning.fill.compositeOver(c.surface))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(
@@ -393,7 +406,7 @@ private fun Warnings(form: ReviewForm, isEdit: Boolean, hadOcr: Boolean) {
             tint = c.warning.ink,
             modifier = Modifier.padding(top = 1.dp).size(18.dp),
         )
-        Text(message, style = VitalsType.control.copy(lineHeight = VitalsType.control.fontSize * 1.4f), color = c.warning.ink)
+        Text(message, style = VitalsType.bodyMedium, color = c.warning.ink)
     }
 }
 
@@ -406,18 +419,21 @@ private fun TimestampRow(form: ReviewForm, exifTag: ExifTag?, onChange: () -> Un
     Row(
         Modifier
             .fillMaxWidth()
-            .background(if (missing) c.warning.base.copy(alpha = 0.10f) else Color.Transparent)
-            .topRule(if (missing) c.warning.base else c.divider)
-            .bottomRule(if (missing) c.warning.base else c.divider)
-            .padding(vertical = 12.dp, horizontal = if (missing) 8.dp else 0.dp),
+            .cardSurface(
+                colors = c,
+                shape = VitalsShape.item,
+                color = if (missing) c.warning.fill.compositeOver(c.surface) else c.surface,
+                border = if (missing) c.warning.base else c.border,
+                elevation = 0.dp,
+            )
+            .padding(start = 14.dp, top = 12.dp, end = 4.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(
-            painterResource(if (missing) R.drawable.ic_alert_triangle else R.drawable.ic_clock),
-            contentDescription = null,
-            tint = if (missing) c.warning.ink else c.accent,
-            modifier = Modifier.size(22.dp),
+        IconCircle(
+            if (missing) R.drawable.ic_alert_triangle else R.drawable.ic_clock,
+            container = if (missing) c.warning.fill else c.primaryContainer,
+            tint = if (missing) c.warning.ink else c.onPrimaryContainer,
         )
         Column(Modifier.weight(1f)) {
             Text(
@@ -434,7 +450,7 @@ private fun TimestampRow(form: ReviewForm, exifTag: ExifTag?, onChange: () -> Un
                 DateSource.MANUAL -> stringResource(R.string.review_source_manual)
                 null -> stringResource(R.string.review_source_missing)
             }
-            Text(source, style = VitalsType.meta, color = if (missing) c.warning.ink else c.text(0.6f))
+            Text(source, style = VitalsType.meta, color = if (missing) c.warning.ink else c.muted)
         }
         TextAction(stringResource(if (missing) R.string.action_set_date else R.string.action_change), onChange)
     }
@@ -445,23 +461,24 @@ private fun TimestampRow(form: ReviewForm, exifTag: ExifTag?, onChange: () -> Un
 private fun NoteEditor(form: ReviewForm, onNote: (String) -> Unit, onChip: (String) -> Unit) {
     val c = Vitals.colors
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.review_note), style = VitalsType.meta, color = c.text(0.7f))
+        Text(stringResource(R.string.review_note), style = VitalsType.label, color = c.muted)
         BasicTextField(
             value = form.note,
             onValueChange = onNote,
             textStyle = VitalsType.bodyMedium.copy(color = c.text),
-            cursorBrush = SolidColor(c.accent),
+            cursorBrush = SolidColor(c.primary),
             decorationBox = { inner ->
                 Box(
                     Modifier
                         .fillMaxWidth()
+                        .clip(VitalsShape.input)
                         .background(c.surface)
-                        .border(1.dp, c.divider)
-                        .heightIn(min = 76.dp)
-                        .padding(10.dp),
+                        .border(1.dp, c.border, VitalsShape.input)
+                        .heightIn(min = 80.dp)
+                        .padding(14.dp),
                 ) {
                     if (form.note.isEmpty()) {
-                        Text(stringResource(R.string.review_note_hint), style = VitalsType.bodyMedium, color = c.text(0.45f))
+                        Text(stringResource(R.string.review_note_hint), style = VitalsType.bodyMedium, color = c.muted)
                     }
                     inner()
                 }

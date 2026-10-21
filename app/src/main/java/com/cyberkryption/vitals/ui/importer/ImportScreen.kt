@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,13 +30,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,12 +46,12 @@ import coil3.compose.AsyncImage
 import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.ui.DateFormats
 import com.cyberkryption.vitals.ui.components.AppBar
-import com.cyberkryption.vitals.ui.components.Kicker
 import com.cyberkryption.vitals.ui.components.PrimaryButton
-import com.cyberkryption.vitals.ui.components.hatching
+import com.cyberkryption.vitals.ui.components.SectionLabel
 import com.cyberkryption.vitals.ui.components.topRule
 import com.cyberkryption.vitals.ui.rememberDateFormats
 import com.cyberkryption.vitals.ui.theme.Vitals
+import com.cyberkryption.vitals.ui.theme.VitalsShape
 import com.cyberkryption.vitals.ui.theme.VitalsType
 
 @Composable
@@ -86,28 +89,28 @@ fun ImportScreen(
             Text(
                 pluralStringResource(R.plurals.import_selected, state.selected.size, state.selected.size),
                 style = VitalsType.control.copy(fontFeatureSettings = "tnum"),
-                color = c.text(0.65f),
-                modifier = Modifier.padding(end = 4.dp),
+                color = c.primaryInk,
+                modifier = Modifier.padding(end = 8.dp),
             )
         }
         Text(
             stringResource(R.string.import_subtitle),
-            style = VitalsType.control,
-            color = c.text(0.65f),
-            modifier = Modifier.padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 12.dp),
+            style = VitalsType.bodyMedium,
+            color = c.muted,
+            modifier = Modifier.padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 8.dp),
         )
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(100.dp),
+            columns = GridCells.Adaptive(104.dp),
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             viewModel.groups(state).forEach { group ->
                 item(span = { GridItemSpan(maxLineSpan) }, key = "header-${group.thisWeek}") {
-                    Kicker(
+                    SectionLabel(
                         stringResource(if (group.thisWeek) R.string.import_this_week else R.string.import_earlier),
-                        Modifier.padding(top = 12.dp, bottom = 4.dp),
+                        Modifier.padding(start = 4.dp, top = 12.dp, bottom = 2.dp).semantics { heading() },
                     )
                 }
                 items(group.photos, key = { it.uri.toString() }) { photo ->
@@ -137,7 +140,7 @@ fun ImportScreen(
             Text(
                 note,
                 style = VitalsType.meta,
-                color = if (state.failed) c.error.ink else c.text(0.65f),
+                color = if (state.failed) c.error.ink else c.muted,
                 modifier = Modifier.weight(1f),
             )
             val count = state.selected.size
@@ -163,8 +166,9 @@ private fun PhotoTile(
     Box(
         Modifier
             .aspectRatio(1f)
-            .hatching(c.text(0.08f), period = 10.dp)
-            .border(if (selected) 2.dp else 1.dp, if (selected) c.accent else c.divider)
+            .clip(VitalsShape.item)
+            .background(c.surfaceVariant)
+            .border(if (selected) 3.dp else 1.dp, if (selected) c.primary else c.border, VitalsShape.item)
             .semantics { this.selected = selected }
             .clickable(role = Role.Checkbox, onClick = onClick),
     ) {
@@ -172,19 +176,20 @@ private fun PhotoTile(
             model = photo.uri,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize().padding(if (selected) 2.dp else 1.dp),
+            modifier = Modifier.matchParentSize(),
         )
         Box(
             Modifier
                 .align(Alignment.TopEnd)
-                .padding(6.dp)
-                .size(24.dp)
-                .background(if (selected) c.accent else c.bg.copy(alpha = 0.6f))
-                .border(1.5.dp, if (selected) c.accent else c.text(0.45f)),
+                .padding(7.dp)
+                .size(26.dp)
+                .clip(CircleShape)
+                .background(if (selected) c.primary else c.surface.copy(alpha = 0.75f))
+                .border(1.5.dp, if (selected) c.primary else c.muted, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             if (order != null) {
-                Text(order.toString(), style = VitalsType.meta, fontWeight = FontWeight.Bold, color = c.bg)
+                Text(order.toString(), style = VitalsType.badgeSmall, color = c.onPrimary)
             }
         }
         val date = photo.date
@@ -199,10 +204,10 @@ private fun PhotoTile(
             maxLines = 1,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(if (selected) 2.dp else 1.dp)
-                .background(c.bg.copy(alpha = 0.82f))
-                .padding(horizontal = 6.dp, vertical = 4.dp),
+                .padding(6.dp)
+                .clip(VitalsShape.pill)
+                .background(if (date == null) c.warning.fill.compositeOver(c.surface) else c.surface.copy(alpha = 0.9f))
+                .padding(horizontal = 8.dp, vertical = 3.dp),
         )
     }
 }

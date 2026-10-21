@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.text.drawText
@@ -16,6 +18,7 @@ import com.cyberkryption.vitals.core.DayPoint
 import com.cyberkryption.vitals.core.Span
 import com.cyberkryption.vitals.core.Tone
 import com.cyberkryption.vitals.ui.components.Scale
+import com.cyberkryption.vitals.ui.components.areaUnder
 import com.cyberkryption.vitals.ui.components.dashedLine
 import com.cyberkryption.vitals.ui.components.polyline
 import com.cyberkryption.vitals.ui.theme.Vitals
@@ -31,6 +34,7 @@ private val AXIS_WIDTH = 28.dp
 private val AXIS_GAP = 6.dp
 private val LABEL_GAP = 6.dp
 private val LABEL_HEIGHT = 14.dp
+private val MAX_BAR = 14.dp
 
 /** Y range for the BP chart: 60–150 unless a reading falls outside it. */
 private fun bpScale(days: List<DayPoint>): Scale {
@@ -58,7 +62,7 @@ private fun xLabels(days: List<DayPoint>, span: Span, locale: Locale): List<Pair
     }
 }
 
-/** Floating bars from diastolic up to systolic, one per day, coloured by category. */
+/** Floating rounded bars from diastolic up to systolic, one per day, coloured by category. */
 @Composable
 fun BloodPressureChart(days: List<DayPoint>, span: Span, locale: Locale, modifier: Modifier = Modifier) {
     val c = Vitals.colors
@@ -69,7 +73,7 @@ fun BloodPressureChart(days: List<DayPoint>, span: Span, locale: Locale, modifie
         .filter { it > scale.lo }
         .toList()
     val labels = xLabels(days, span, locale)
-    val axisStyle = VitalsType.axis.copy(color = c.text(0.55f))
+    val axisStyle = VitalsType.axis.copy(color = c.muted)
     val threshold = c.tone(Tone.STAGE1).base
 
     Canvas(modifier.fillMaxWidth().height(PLOT_HEIGHT + LABEL_GAP + LABEL_HEIGHT)) {
@@ -86,27 +90,32 @@ fun BloodPressureChart(days: List<DayPoint>, span: Span, locale: Locale, modifie
 
         translate(left = plotLeft) {
             val area = Size(plotWidth, plotHeight)
-            drawLine(c.divider, Offset(stroke / 2, 0f), Offset(stroke / 2, plotHeight), stroke)
+            for (tick in ticks) {
+                val y = scale.y(tick, plotHeight)
+                drawLine(c.divider, Offset(0f, y), Offset(plotWidth, y), stroke)
+            }
             drawLine(c.divider, Offset(0f, plotHeight - stroke / 2), Offset(plotWidth, plotHeight - stroke / 2), stroke)
             clipRect(right = area.width, bottom = area.height) {
-                dashedLine(threshold, scale.y(130f, plotHeight))
-                dashedLine(threshold, scale.y(80f, plotHeight))
+                dashedLine(threshold, scale.y(130f, plotHeight), strokeWidth = 1.5.dp.toPx())
+                dashedLine(threshold, scale.y(80f, plotHeight), strokeWidth = 1.5.dp.toPx())
             }
 
             val inset = 2.dp.toPx()
-            val gap = (if (span == Span.WEEK) 14.dp else 3.dp).toPx()
             val n = days.size.coerceAtLeast(1)
-            val barWidth = ((plotWidth - 2 * inset - gap * (n - 1)) / n).coerceAtLeast(1f)
-            val slotCenter = { i: Int -> inset + i * (barWidth + gap) + barWidth / 2 }
+            val slot = (plotWidth - 2 * inset) / n
+            // Thin pills with air between them; a month's bars are only slightly narrower than their slots.
+            val barWidth = (if (span == Span.WEEK) minOf(slot * 0.5f, MAX_BAR.toPx()) else slot - 3.dp.toPx()).coerceAtLeast(1f)
+            val slotCenter = { i: Int -> inset + (i + 0.5f) * slot }
             days.forEachIndexed { i, day ->
                 val sys = day.systolic ?: return@forEachIndexed
                 val dia = day.diastolic ?: return@forEachIndexed
                 val top = scale.y(sys.toFloat(), plotHeight)
-                val bottom = scale.y(dia.toFloat(), plotHeight)
-                drawRect(
+                val height = (scale.y(dia.toFloat(), plotHeight) - top).coerceAtLeast(2.dp.toPx())
+                drawRoundRect(
                     color = c.tone(day.status!!.tone).base,
                     topLeft = Offset(slotCenter(i) - barWidth / 2, top),
-                    size = Size(barWidth, (bottom - top).coerceAtLeast(2.dp.toPx())),
+                    size = Size(barWidth, height),
+                    cornerRadius = CornerRadius(minOf(barWidth, height) / 2),
                 )
             }
 
@@ -120,11 +129,12 @@ fun BloodPressureChart(days: List<DayPoint>, span: Span, locale: Locale, modifie
     }
 }
 
-/** Daily line for heart rate or SpO₂, with an optional dashed threshold. */
+/** Daily line for heart rate or SpO₂ over a soft fill, with an optional dashed threshold. */
 @Composable
 fun DailyLineChart(
     values: List<Int?>,
     scale: Scale,
+    color: Color,
     modifier: Modifier = Modifier,
     threshold: Float? = null,
 ) {
@@ -133,7 +143,8 @@ fun DailyLineChart(
     Canvas(modifier.fillMaxWidth().height(80.dp)) {
         val stroke = 1.dp.toPx()
         drawLine(c.divider, Offset(0f, size.height - stroke / 2), Offset(size.width, size.height - stroke / 2), stroke)
-        if (threshold != null) dashedLine(thresholdColor, scale.y(threshold, size.height))
-        polyline(values, scale, c.accent, 1.75.dp)
+        if (threshold != null) dashedLine(thresholdColor, scale.y(threshold, size.height), strokeWidth = 1.5.dp.toPx())
+        areaUnder(values, scale, color)
+        polyline(values, scale, color, 2.dp)
     }
 }

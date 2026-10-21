@@ -63,7 +63,7 @@ fun DateTimePicker(initial: Instant?, onDismiss: () -> Unit, onPicked: (Instant)
                 )
             },
             dismissButton = { TextAction(stringResource(R.string.action_cancel), onDismiss, color = c.text) },
-            colors = DatePickerDefaults.colors(containerColor = c.bg),
+            colors = DatePickerDefaults.colors(containerColor = c.surface),
         ) {
             DatePicker(state = dateState)
         }

@@ -12,13 +12,22 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 
-/** Square corners in every M3 shape slot. */
+/** Corner radii: metric cards 24, list items 16, inputs 14; buttons, chips and badges are pills. */
+object VitalsShape {
+    val card = RoundedCornerShape(24.dp)
+    val item = RoundedCornerShape(16.dp)
+    val input = RoundedCornerShape(14.dp)
+    val photo = RoundedCornerShape(20.dp)
+    val dialog = RoundedCornerShape(28.dp)
+    val pill = RoundedCornerShape(percent = 50)
+}
+
 val VitalsShapes = Shapes(
-    extraSmall = RoundedCornerShape(0.dp),
-    small = RoundedCornerShape(0.dp),
-    medium = RoundedCornerShape(0.dp),
-    large = RoundedCornerShape(0.dp),
-    extraLarge = RoundedCornerShape(0.dp),
+    extraSmall = RoundedCornerShape(8.dp),
+    small = VitalsShape.input,
+    medium = VitalsShape.item,
+    large = VitalsShape.card,
+    extraLarge = VitalsShape.dialog,
 )
 
 @Composable

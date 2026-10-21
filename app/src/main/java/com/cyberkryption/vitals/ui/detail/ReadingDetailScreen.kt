@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -24,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -40,14 +42,15 @@ import com.cyberkryption.vitals.core.ReadingType
 import com.cyberkryption.vitals.core.fields
 import com.cyberkryption.vitals.core.status
 import com.cyberkryption.vitals.ui.components.AppBar
-import com.cyberkryption.vitals.ui.components.BlueprintFrame
 import com.cyberkryption.vitals.ui.components.DialogText
 import com.cyberkryption.vitals.ui.components.IconAction
-import com.cyberkryption.vitals.ui.components.Kicker
-import com.cyberkryption.vitals.ui.components.StatusTag
+import com.cyberkryption.vitals.ui.components.PhotoFrame
+import com.cyberkryption.vitals.ui.components.SectionLabel
+import com.cyberkryption.vitals.ui.components.StatusBadge
+import com.cyberkryption.vitals.ui.components.TypeIcon
+import com.cyberkryption.vitals.ui.components.VitalsCard
 import com.cyberkryption.vitals.ui.components.VitalsDialog
 import com.cyberkryption.vitals.ui.components.bottomRule
-import com.cyberkryption.vitals.ui.components.topRule
 import com.cyberkryption.vitals.ui.fieldLabel
 import com.cyberkryption.vitals.ui.rememberDateFormats
 import com.cyberkryption.vitals.ui.theme.Vitals
@@ -113,56 +116,62 @@ private fun DetailBody(reading: Reading) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatusTag(reading.status, long = true)
+        VitalsCard(
+            Modifier.fillMaxWidth(),
+            color = lerp(c.surface, c.primaryContainer, if (c.isDark) 0.25f else 0.3f),
+            contentPadding = PaddingValues(18.dp),
+            spacing = 12.dp,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TypeIcon(reading.type)
+                Text(
+                    formats.format(formats.full, reading.takenAt),
+                    style = VitalsType.cardTitle,
+                    modifier = Modifier.weight(1f),
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val value = when (reading.type) {
-                    ReadingType.BP -> "${reading.systolic}/${reading.diastolic}"
+                    ReadingType.BP -> "${reading.systolic} / ${reading.diastolic}"
                     ReadingType.OXIMETER -> reading.spo2.toString()
                 }
                 val unit = stringResource(if (reading.type == ReadingType.BP) R.string.unit_mmhg else R.string.unit_percent)
                 Text(value, style = VitalsType.detailValue, modifier = Modifier.alignByBaseline())
-                Text(unit, style = VitalsType.bodyMedium, color = c.text(0.6f), modifier = Modifier.alignByBaseline())
+                Text(unit, style = VitalsType.subtitle, color = c.muted, modifier = Modifier.alignByBaseline())
             }
-        }
-
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)
-                .topRule(c.divider)
-                .bottomRule(c.divider),
-        ) {
-            reading.type.fields.forEachIndexed { i, field ->
-                if (i > 0) Box(Modifier.width(1.dp).fillMaxHeight().background(c.divider))
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .padding(start = if (i == 0) 0.dp else 12.dp, top = 12.dp, bottom = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Text(stringResource(fieldLabel(field)).uppercase(), style = VitalsType.overline, color = c.text(0.6f), maxLines = 1)
-                    Text(reading.value(field)?.toString().orEmpty(), style = VitalsType.stripValue)
+            StatusBadge(reading.status, long = true)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+                    .height(IntrinsicSize.Min),
+            ) {
+                reading.type.fields.forEachIndexed { i, field ->
+                    if (i > 0) Box(Modifier.padding(horizontal = 14.dp).width(1.dp).fillMaxHeight().background(c.divider))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(stringResource(fieldLabel(field)), style = VitalsType.meta, color = c.muted, maxLines = 1)
+                        Text(reading.value(field)?.toString().orEmpty(), style = VitalsType.stripValue)
+                    }
                 }
             }
         }
 
         val note = reading.note
         if (!note.isNullOrBlank()) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Kicker(stringResource(R.string.review_note))
+            VitalsCard(Modifier.fillMaxWidth(), spacing = 6.dp) {
+                SectionLabel(stringResource(R.string.review_note))
                 Text(note, style = VitalsType.bodyLarge)
             }
         }
 
-        BlueprintFrame(Modifier.fillMaxWidth().aspectRatio(4f / 3f)) {
+        PhotoFrame(Modifier.fillMaxWidth().aspectRatio(4f / 3f)) {
             AsyncImage(
                 model = reading.photoUri,
                 contentDescription = stringResource(R.string.detail_photo),
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize().padding(1.dp),
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
@@ -180,7 +189,9 @@ private fun DetailBody(reading: Reading) {
             ),
             stringResource(R.string.detail_edited) to editedText(reading.editedFields),
         )
-        MetadataList(rows)
+        VitalsCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp), spacing = 0.dp) {
+            MetadataList(rows)
+        }
     }
 }
 
@@ -197,13 +208,18 @@ private fun MetadataList(rows: List<Pair<String, String>>) {
     val c = Vitals.colors
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val labelWidth = with(density) { rows.maxOf { measurer.measure(it.first, VitalsType.control).size.width }.toDp() }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        rows.forEach { (label, value) ->
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
-                Text(label, style = VitalsType.control, color = c.text(0.6f), modifier = Modifier.width(labelWidth))
-                Text(value, style = VitalsType.control, modifier = Modifier.weight(1f))
-            }
+    val labelWidth = with(density) { rows.maxOf { measurer.measure(it.first, VitalsType.meta).size.width }.toDp() }
+    rows.forEachIndexed { i, (label, value) ->
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .then(if (i < rows.lastIndex) Modifier.bottomRule(c.divider) else Modifier)
+                .padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Text(label, style = VitalsType.meta, color = c.muted, modifier = Modifier.width(labelWidth))
+            Text(value, style = VitalsType.meta, modifier = Modifier.weight(1f))
         }
     }
 }

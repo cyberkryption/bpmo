@@ -36,6 +36,21 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+}
+
+// Screenshot tests render the app through Robolectric into docs/screenshots. They're slow and
+// write files, so they run only when asked: ./gradlew :app:testDebugUnitTest -Pscreenshots
+tasks.withType<Test>().configureEach {
+    if (providers.gradleProperty("screenshots").isPresent) {
+        filter.includeTestsMatching("*.ScreenshotTest")
+        systemProperty("vitals.screenshots.dir", rootProject.file("docs/screenshots").absolutePath)
+    } else {
+        filter.excludeTestsMatching("*.ScreenshotTest")
+    }
 }
 
 kotlin {
@@ -90,4 +105,10 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

@@ -18,11 +18,10 @@ import kotlinx.coroutines.SupervisorJob
 import java.time.Clock
 
 /** Manual dependency graph, created once by [VitalsApplication]. */
-class AppContainer(context: Context) {
+class AppContainer(context: Context, val clock: Clock = Clock.systemDefaultZone()) {
     private val appContext = context.applicationContext
 
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    val clock: Clock = Clock.systemDefaultZone()
 
     val photos = PhotoStore(appContext)
     val readings = ReadingRepository(VitalsDatabase.build(appContext).readingDao(), photos)
