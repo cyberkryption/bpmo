@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cyberkryption.vitals.data.AppSettings
 import com.cyberkryption.vitals.data.RelockTimeout
 import com.cyberkryption.vitals.data.SettingsRepository
+import com.cyberkryption.vitals.data.ThemeMode
 import com.cyberkryption.vitals.security.AppLock
 import com.cyberkryption.vitals.ui.container
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +48,10 @@ class SettingsViewModel(
 
     fun setCategoryColors(enabled: Boolean) {
         viewModelScope.launch { settings.setCategoryColors(enabled) }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { settings.setThemeMode(mode) }
     }
 
     fun beforeSystemSettings() = appLock.expectHandoff()

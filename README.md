@@ -49,7 +49,7 @@ It's built in Kotlin with Jetpack Compose and Material 3: rounded cards, a sage-
 
 ### Privacy and lock
 
-Readings and photos are kept in app-private storage and excluded from cloud backup. In Settings, the fourth tab, you can require your fingerprint, face or device PIN to open the app. The lock asks again after the app has been in the background for a time you choose: immediately, 1 minute or 5 minutes. After three failed biometric attempts it falls back to your PIN, and app content is hidden from screenshots and the recents screen while the app is locked. Settings also has an option to turn the category colours off.
+Readings and photos are kept in app-private storage and excluded from cloud backup. In Settings, the fourth tab, you can require your fingerprint, face or device PIN to open the app. The lock asks again after the app has been in the background for a time you choose: immediately, 1 minute or 5 minutes. After three failed biometric attempts it falls back to your PIN, and app content is hidden from screenshots and the recents screen while the app is locked. Settings also lets you choose a light or dark theme, or follow the phone's setting (the default), and turn the category colours off.
 
 | | Reading detail | Settings | Lock |
 |---|:---:|:---:|:---:|
