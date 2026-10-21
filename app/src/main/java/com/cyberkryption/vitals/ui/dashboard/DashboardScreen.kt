@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +33,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -55,6 +55,7 @@ import com.cyberkryption.vitals.ui.components.Segmented
 import com.cyberkryption.vitals.ui.components.Sparkline
 import com.cyberkryption.vitals.ui.components.StatusBadge
 import com.cyberkryption.vitals.ui.components.TextAction
+import com.cyberkryption.vitals.ui.components.ValueWithUnit
 import com.cyberkryption.vitals.ui.components.VitalsCard
 import com.cyberkryption.vitals.ui.components.VitalsDialog
 import com.cyberkryption.vitals.ui.components.VitalsLogo
@@ -89,8 +90,8 @@ fun DashboardScreen(
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+                .padding(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             if (s == null) return@Column
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -101,6 +102,7 @@ fun DashboardScreen(
                 options = listOf(Span.WEEK to stringResource(R.string.span_7_days), Span.MONTH to stringResource(R.string.span_30_days)),
                 selected = s.span,
                 onSelect = viewModel::setSpan,
+                height = 40.dp,
                 fillWidth = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -126,14 +128,14 @@ fun DashboardScreen(
                     text = stringResource(R.string.action_scan),
                     onClick = onScan,
                     icon = R.drawable.ic_camera,
-                    height = 56.dp,
+                    height = 50.dp,
                     modifier = Modifier.weight(1.3f),
                 )
                 SecondaryButton(
                     text = stringResource(R.string.action_import_short),
                     onClick = onImport,
                     icon = R.drawable.ic_upload,
-                    height = 56.dp,
+                    height = 50.dp,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -157,21 +159,21 @@ fun DashboardScreen(
 @Composable
 private fun AppHeader(onSettings: () -> Unit) {
     Row(
-        Modifier.padding(start = 20.dp, top = 12.dp, end = 8.dp, bottom = 4.dp),
+        Modifier.padding(start = 20.dp, top = 8.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        VitalsLogo(Modifier.size(34.dp))
+        VitalsLogo(Modifier.size(32.dp))
         Text(stringResource(R.string.app_name), style = VitalsType.appTitle, modifier = Modifier.weight(1f))
         IconAction(R.drawable.ic_settings, stringResource(R.string.settings_title), onSettings)
     }
 }
 
 @Composable
-private fun CardHeader(icon: Int, container: Color, tint: Color, title: String) {
+private fun CardHeader(icon: Int, container: Color, tint: Color, title: String, iconSize: Dp = 40.dp) {
     val c = Vitals.colors
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        IconCircle(icon, container, tint)
+        IconCircle(icon, container, tint, size = iconSize, iconSize = iconSize / 2)
         Text(title, style = VitalsType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = c.muted, modifier = Modifier.size(20.dp))
     }
@@ -183,7 +185,7 @@ private fun BloodPressureCard(summary: VitalsSummary, span: Span, onOpen: () -> 
     val c = Vitals.colors
     val bp = summary.bloodPressure
     val tint = lerp(c.surface, c.primaryContainer, if (c.isDark) 0.25f else 0.3f)
-    VitalsCard(Modifier.fillMaxWidth(), onClick = onOpen, color = tint, contentPadding = PaddingValues(18.dp), spacing = 10.dp) {
+    VitalsCard(Modifier.fillMaxWidth(), onClick = onOpen, color = tint, contentPadding = PaddingValues(16.dp), spacing = 8.dp) {
         CardHeader(R.drawable.ic_heart_pulse, c.primaryContainer, c.onPrimaryContainer, stringResource(R.string.dashboard_bp_title))
         if (bp == null) {
             Text(stringResource(R.string.value_none), style = VitalsType.hero)
@@ -195,18 +197,16 @@ private fun BloodPressureCard(summary: VitalsSummary, span: Span, onOpen: () -> 
             return@VitalsCard
         }
         val spoken = stringResource(R.string.a11y_bp_value, bp.systolic.average, bp.diastolic.average)
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ValueWithUnit(
+            value = "${bp.systolic.average} / ${bp.diastolic.average}",
+            unit = stringResource(R.string.unit_mmhg),
+            valueStyle = VitalsType.hero,
             modifier = Modifier.clearAndSetSemantics { contentDescription = spoken },
-        ) {
-            Text("${bp.systolic.average} / ${bp.diastolic.average}", style = VitalsType.hero, modifier = Modifier.alignByBaseline())
-            Text(stringResource(R.string.unit_mmhg), style = VitalsType.subtitle, color = c.muted, modifier = Modifier.alignByBaseline())
-        }
+        )
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatusBadge(bp.status)
             Text(pluralStringResource(R.plurals.dashboard_readings, bp.count, bp.count), style = VitalsType.metaNumbers, color = c.muted)
         }
-        Spacer(Modifier.height(2.dp))
         Row(
             Modifier
                 .fillMaxWidth()
@@ -222,7 +222,7 @@ private fun BloodPressureCard(summary: VitalsSummary, span: Span, onOpen: () -> 
             Canvas(
                 Modifier
                     .weight(1f)
-                    .height(48.dp)
+                    .height(40.dp)
                     .padding(vertical = 4.dp),
             ) {
                 polyline(summary.diastolicSeries, scale, c.primary.copy(alpha = 0.45f), 2.dp)
@@ -300,16 +300,17 @@ private fun MetricCard(
     modifier: Modifier,
 ) {
     val c = Vitals.colors
-    VitalsCard(modifier, onClick = onOpen, contentPadding = PaddingValues(16.dp), spacing = 10.dp) {
-        CardHeader(icon, container, tint, title)
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(value?.toString() ?: stringResource(R.string.value_none), style = VitalsType.tileValue, modifier = Modifier.alignByBaseline())
-            if (value != null) Text(unit, style = VitalsType.subtitle, color = c.muted, modifier = Modifier.alignByBaseline())
+    VitalsCard(modifier, onClick = onOpen, contentPadding = PaddingValues(14.dp), spacing = 8.dp) {
+        CardHeader(icon, container, tint, title, iconSize = 34.dp)
+        if (value == null) {
+            Text(stringResource(R.string.value_none), style = VitalsType.tileValue)
+        } else {
+            ValueWithUnit(value.toString(), unit, VitalsType.tileValue)
         }
         if (series.isEmpty()) {
-            Text(stringResource(R.string.dashboard_no_data), style = VitalsType.meta, color = c.muted, modifier = Modifier.height(40.dp))
+            Text(stringResource(R.string.dashboard_no_data), style = VitalsType.meta, color = c.muted, modifier = Modifier.height(34.dp))
         } else {
-            Sparkline(series, scale, line, Modifier.fillMaxWidth().height(40.dp), area = true)
+            Sparkline(series, scale, line, Modifier.fillMaxWidth().height(34.dp), area = true)
         }
     }
 }

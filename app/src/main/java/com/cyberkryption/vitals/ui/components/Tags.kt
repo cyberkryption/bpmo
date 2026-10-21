@@ -10,6 +10,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.core.Status
@@ -72,4 +75,26 @@ fun ToneBadge(text: String, tone: ToneColors, modifier: Modifier = Modifier, sma
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier, color: Color = Vitals.colors.muted) {
     Text(text = text, style = VitalsType.label, color = color, modifier = modifier, maxLines = 1)
+}
+
+/**
+ * A large value with its unit as one line of text, so a narrow pane wraps the unit as a word
+ * instead of squeezing it into a column of letters.
+ */
+@Composable
+fun ValueWithUnit(
+    value: String,
+    unit: String,
+    valueStyle: TextStyle,
+    modifier: Modifier = Modifier,
+    unitStyle: TextStyle = VitalsType.subtitle,
+    unitColor: Color = Vitals.colors.muted,
+) {
+    val text = buildAnnotatedString {
+        // Non-breaking spaces keep "118 / 76" together.
+        append(value.replace(' ', '\u00A0'))
+        append(' ')
+        withStyle(unitStyle.toSpanStyle().copy(color = unitColor)) { append(unit) }
+    }
+    Text(text, style = valueStyle, modifier = modifier)
 }
