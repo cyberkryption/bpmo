@@ -26,13 +26,13 @@ import java.util.Locale
 /** A4 summary of one trends period: averages, categories and every reading. */
 class PdfReport(private val context: Context, private val zone: ZoneId) {
     private val locale: Locale = context.resources.configuration.locales[0]
-    private val body = ResourcesCompat.getFont(context, R.font.barlow_regular) ?: Typeface.DEFAULT
-    private val heading = ResourcesCompat.getFont(context, R.font.barlow_condensed_semibold) ?: Typeface.DEFAULT_BOLD
+    private val body = ResourcesCompat.getFont(context, R.font.figtree_regular) ?: Typeface.DEFAULT
+    private val heading = ResourcesCompat.getFont(context, R.font.figtree_semibold) ?: Typeface.DEFAULT_BOLD
 
-    private val ink = Color.rgb(0x1D, 0x1F, 0x20)
-    private val muted = Color.argb(158, 0x1D, 0x1F, 0x20)
-    private val accent = Color.rgb(0x41, 0x61, 0x80)
-    private val rule = Color.argb(41, 0x1D, 0x1F, 0x20)
+    private val ink = Color.rgb(0x26, 0x3B, 0x36)
+    private val muted = Color.argb(170, 0x26, 0x3B, 0x36)
+    private val accent = Color.rgb(0x3A, 0x6A, 0x5F)
+    private val rule = Color.argb(41, 0x26, 0x3B, 0x36)
 
     private fun paint(typeface: Typeface, size: Float, color: Int = ink) = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         this.typeface = typeface

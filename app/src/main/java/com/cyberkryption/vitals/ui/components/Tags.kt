@@ -2,22 +2,20 @@ package com.cyberkryption.vitals.ui.components
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.core.Status
 import com.cyberkryption.vitals.ui.theme.ToneColors
 import com.cyberkryption.vitals.ui.theme.Vitals
+import com.cyberkryption.vitals.ui.theme.VitalsShape
 import com.cyberkryption.vitals.ui.theme.VitalsType
 
 @StringRes
@@ -44,38 +42,34 @@ fun Status.longLabel(): Int = when (this) {
     Status.SPO2_VERY_LOW -> R.string.status_spo2_very_low_long
 }
 
+/** The category, always named in words on a tinted pill. */
 @Composable
-fun StatusTag(status: Status, modifier: Modifier = Modifier, long: Boolean = false, large: Boolean = false) {
-    Tag(
+fun StatusBadge(status: Status, modifier: Modifier = Modifier, long: Boolean = false, small: Boolean = false) {
+    ToneBadge(
         text = stringResource(if (long) status.longLabel() else status.shortLabel()),
         tone = Vitals.colors.tone(status.tone),
         modifier = modifier,
-        large = large || long,
+        small = small,
     )
 }
 
-/** Uppercase label on a tinted fill with a square dot. */
 @Composable
-fun Tag(text: String, tone: ToneColors, modifier: Modifier = Modifier, large: Boolean = false) {
-    Row(
+fun ToneBadge(text: String, tone: ToneColors, modifier: Modifier = Modifier, small: Boolean = false) {
+    val c = Vitals.colors
+    Text(
+        text = text,
+        style = if (small) VitalsType.badgeSmall else VitalsType.badge,
+        color = tone.ink,
+        maxLines = 1,
         modifier = modifier
-            .background(tone.fill)
-            .padding(horizontal = if (large) 8.dp else 7.dp, vertical = 3.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(6.dp).background(tone.base))
-        Text(
-            text = text.uppercase(),
-            style = if (large) VitalsType.tagLarge else VitalsType.tag,
-            color = tone.ink,
-            maxLines = 1,
-        )
-    }
+            .clip(VitalsShape.pill)
+            .background(tone.fill.compositeOver(c.surface))
+            .padding(horizontal = if (small) 10.dp else 12.dp, vertical = if (small) 3.dp else 5.dp),
+    )
 }
 
-/** Small uppercase label above a value or section. */
+/** A small sentence-case label above a group or value. */
 @Composable
-fun Kicker(text: String, modifier: Modifier = Modifier, color: Color = Vitals.colors.accent700) {
-    Text(text = text.uppercase(), style = VitalsType.kicker, color = color, modifier = modifier, maxLines = 1)
+fun SectionLabel(text: String, modifier: Modifier = Modifier, color: Color = Vitals.colors.muted) {
+    Text(text = text, style = VitalsType.label, color = color, modifier = modifier, maxLines = 1)
 }

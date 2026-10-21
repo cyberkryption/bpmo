@@ -56,7 +56,8 @@ import com.cyberkryption.vitals.ui.trends.TrendsScreen
 
 /**
  * App shell. Compact windows get the bottom bar; medium and up get the rail, which holds
- * Scan, so the Dashboard drops its FABs. Expanded windows show Trends beside the Dashboard.
+ * Scan and Import, so the Dashboard drops its action row. Expanded windows show Trends
+ * beside the Dashboard.
  */
 @Composable
 fun VitalsApp(container: AppContainer, navController: NavHostController) {
@@ -71,6 +72,7 @@ fun VitalsApp(container: AppContainer, navController: NavHostController) {
         destination.hasRoute<TodayRoute>() -> TopLevel.TODAY
         destination.hasRoute<HistoryRoute>() -> TopLevel.HISTORY
         destination.hasRoute<TrendsRoute>() -> TopLevel.TRENDS
+        destination.hasRoute<SettingsRoute>() -> TopLevel.SETTINGS
         else -> null
     }
     var historyDetailOnly by rememberSaveable { mutableStateOf(false) }
@@ -83,6 +85,7 @@ fun VitalsApp(container: AppContainer, navController: NavHostController) {
             TopLevel.TODAY -> TodayRoute
             TopLevel.HISTORY -> HistoryRoute
             TopLevel.TRENDS -> TrendsRoute
+            TopLevel.SETTINGS -> SettingsRoute
         }
         navController.navigate(route) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -99,6 +102,7 @@ fun VitalsApp(container: AppContainer, navController: NavHostController) {
     }
 
     val scan = { navController.navigate(CaptureRoute) }
+    val openImport = { navController.navigate(ImportRoute) }
     val c = Vitals.colors
 
     // The NavHost keeps one position in the tree whatever chrome surrounds it, so no state is lost on resize.
@@ -108,7 +112,7 @@ fun VitalsApp(container: AppContainer, navController: NavHostController) {
             .background(c.bg)
             .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)),
     ) {
-        if (showRail) VitalsNavigationRail(topLevel, ::select, onScan = scan)
+        if (showRail) VitalsNavigationRail(topLevel, ::select, onScan = scan, onImport = openImport)
         Column(Modifier.weight(1f)) {
             Box(
                 Modifier
@@ -121,11 +125,12 @@ fun VitalsApp(container: AppContainer, navController: NavHostController) {
                         val dashboard: @Composable (Modifier) -> Unit = { modifier ->
                             DashboardScreen(
                                 onScan = scan,
-                                onImport = { navController.navigate(ImportRoute) },
+                                onImport = openImport,
                                 onOpenReading = { navController.navigate(ReadingRoute(it)) },
                                 onSeeAll = { select(TopLevel.HISTORY) },
-                                onSettings = { navController.navigate(SettingsRoute) },
-                                showFabs = !useRail,
+                                onOpenTrends = { select(TopLevel.TRENDS) },
+                                onSettings = { select(TopLevel.SETTINGS) },
+                                showActions = !useRail,
                                 modifier = modifier,
                             )
                         }
@@ -175,9 +180,7 @@ fun VitalsApp(container: AppContainer, navController: NavHostController) {
                     composable<ReviewRoute> {
                         ReviewScreen(onDone = { navController.popBackStack() })
                     }
-                    composable<SettingsRoute> {
-                        SettingsScreen(onBack = { navController.popBackStack() })
-                    }
+                    composable<SettingsRoute> { SettingsScreen() }
                 }
             }
             if (showBar) VitalsNavigationBar(topLevel, ::select)

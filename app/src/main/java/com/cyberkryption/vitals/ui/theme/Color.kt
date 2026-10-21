@@ -9,43 +9,53 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import com.cyberkryption.vitals.core.Tone
 
-/** Base colour for dots, bars and borders; ink for text on a tinted fill. */
+/** Base colour for dots, bars and lines; ink for text on the tinted [fill]. */
 @Immutable
-data class ToneColors(val base: Color, val ink: Color) {
-    /** Tag fill: base at 18% over the background. */
-    val fill: Color get() = base.copy(alpha = 0.18f)
+data class ToneColors(val base: Color, val ink: Color, private val fillAlpha: Float = 0.2f) {
+    /** Badge and banner fill. */
+    val fill: Color get() = base.copy(alpha = fillAlpha)
 }
 
-/** The "Industry" design tokens. M3 components read the [ColorScheme] built from these. */
+/**
+ * Sage-and-teal wellness palette. Every text pairing here clears 4.5:1, and every
+ * category is also named in text, never shown by colour alone.
+ */
 @Immutable
 data class VitalsColors(
     val bg: Color,
     val surface: Color,
+    /** Segmented tracks, inputs and photo placeholders. */
+    val surfaceVariant: Color,
     val text: Color,
-    val accent: Color,
-    val accent100: Color,
-    val accent600: Color,
-    val accent700: Color,
-    val accent800: Color,
-    val neutral500: Color,
-    val divider: Color,
+    /** Secondary text; solid so it keeps its contrast on any surface. */
+    val muted: Color,
+    val primary: Color,
+    /** Primary as text on the background, links and selected labels. */
+    val primaryInk: Color,
+    val onPrimary: Color,
+    val primaryContainer: Color,
+    val onPrimaryContainer: Color,
+    /** SpO₂ accent. */
+    val rest: Color,
+    val restInk: Color,
+    val restContainer: Color,
+    /** Card and button outlines. */
+    val border: Color,
     val isDark: Boolean,
     private val tones: Map<Tone, ToneColors>,
     val categoryColors: Boolean = true,
 ) {
-    /** Meta and caption text. */
-    val muted: Color get() = text.copy(alpha = 0.62f)
-
-    /** Row separators inside lists. */
-    val hairline: Color get() = text.copy(alpha = 0.09f)
-
-    /** Registration marks on cards and the primary button. */
-    val mark: Color get() = text.copy(alpha = 0.55f)
+    /** Separators inside cards and tables. */
+    val divider: Color get() = text.copy(alpha = if (isDark) 0.12f else 0.09f)
 
     fun text(alpha: Float): Color = text.copy(alpha = alpha)
 
     /** Category colour, or neutral when category colours are turned off in Settings. */
-    fun tone(tone: Tone): ToneColors = if (categoryColors) tones.getValue(tone) else ToneColors(neutral500, text)
+    fun tone(tone: Tone): ToneColors = if (categoryColors) {
+        tones.getValue(tone)
+    } else {
+        ToneColors(muted, text, if (isDark) 0.22f else 0.14f)
+    }
 
     /** Warnings and low-confidence flags keep the stage 1 colour even with category colours off. */
     val warning: ToneColors get() = tones.getValue(Tone.STAGE1)
@@ -56,105 +66,111 @@ data class VitalsColors(
     val error: ToneColors get() = tones.getValue(Tone.CRISIS)
 }
 
-// Status colours are the handoff's OKLCH values converted to sRGB; categories differ only in hue.
 private val LightTones = mapOf(
-    Tone.NORMAL to ToneColors(Color(0xFF48A260), Color(0xFF1B552C)), // oklch(.64 .13 150) / (.40 .09 150)
-    Tone.ELEVATED to ToneColors(Color(0xFFA58A07), Color(0xFF574600)), // oklch(.64 .13 95) / (.40 .09 95)
-    Tone.STAGE1 to ToneColors(Color(0xFFC5772C), Color(0xFF6A3A06)), // oklch(.64 .13 60) / (.40 .09 60)
-    Tone.STAGE2 to ToneColors(Color(0xFFCF6B5B), Color(0xFF703229)), // oklch(.64 .13 30) / (.40 .09 30)
-    Tone.CRISIS to ToneColors(Color(0xFFB6303E), Color(0xFF6F1821)), // oklch(.52 .17 20) / (.36 .12 20)
+    Tone.NORMAL to ToneColors(Color(0xFF4F9A7C), Color(0xFF1F5141)),
+    Tone.ELEVATED to ToneColors(Color(0xFFAA8A0E), Color(0xFF5C4700)),
+    Tone.STAGE1 to ToneColors(Color(0xFFD07A32), Color(0xFF7A3E0B)),
+    Tone.STAGE2 to ToneColors(Color(0xFFC9584A), Color(0xFF7A2B21)),
+    Tone.CRISIS to ToneColors(Color(0xFFA8323F), Color(0xFF6B1621)),
 )
+
+private const val DARK_FILL = 0.26f
 
 private val DarkTones = mapOf(
-    Tone.NORMAL to ToneColors(Color(0xFF6FC082), Color(0xFFACE0B6)), // oklch(.74 .12 150) / (.86 .08 150)
-    Tone.ELEVATED to ToneColors(Color(0xFFC3AA48), Color(0xFFE1D195)), // oklch(.74 .12 95) / (.86 .08 95)
-    Tone.STAGE1 to ToneColors(Color(0xFFE29858), Color(0xFFF9C59C)), // oklch(.74 .12 60) / (.86 .08 60)
-    Tone.STAGE2 to ToneColors(Color(0xFFED8D7D), Color(0xFFFFBEB2)), // oklch(.74 .12 30) / (.86 .08 30)
-    Tone.CRISIS to ToneColors(Color(0xFFE75F66), Color(0xFFFFB0B0)), // oklch(.66 .17 20) / (.84 .10 20)
+    Tone.NORMAL to ToneColors(Color(0xFF7CC4A4), Color(0xFFC6EBDA), DARK_FILL),
+    Tone.ELEVATED to ToneColors(Color(0xFFD6B54A), Color(0xFFF3E2A6), DARK_FILL),
+    Tone.STAGE1 to ToneColors(Color(0xFFE89A5C), Color(0xFFFCD3AF), DARK_FILL),
+    Tone.STAGE2 to ToneColors(Color(0xFFEE8A7A), Color(0xFFFFC7BD), DARK_FILL),
+    Tone.CRISIS to ToneColors(Color(0xFFF06A72), Color(0xFFFFBEC1), DARK_FILL),
 )
 
-private val LightText = Color(0xFF1D1F20)
-private val DarkText = Color(0xFFE4E6E8)
-
 val LightVitalsColors = VitalsColors(
-    bg = Color(0xFFF2F2F3),
-    surface = Color(0xFFE9E9EA),
-    text = LightText,
-    accent = Color(0xFF5980A6),
-    accent100 = Color(0xFFEEF6FF),
-    accent600 = Color(0xFF597EA3),
-    accent700 = Color(0xFF416180),
-    accent800 = Color(0xFF2C455D),
-    neutral500 = Color(0xFF98989B),
-    divider = LightText.copy(alpha = 0.16f),
+    bg = Color(0xFFF6F7F2),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFECEFE8),
+    text = Color(0xFF263B36),
+    muted = Color(0xFF5B6B66),
+    primary = Color(0xFF477C70),
+    primaryInk = Color(0xFF3A6A5F),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFDCEBE4),
+    onPrimaryContainer = Color(0xFF1F4A40),
+    rest = Color(0xFF8272B2),
+    restInk = Color(0xFF5E4E92),
+    restContainer = Color(0xFFECE8F6),
+    border = Color(0xFFE1E6DE),
     isDark = false,
     tones = LightTones,
 )
 
 val DarkVitalsColors = VitalsColors(
-    bg = Color(0xFF121416),
-    surface = Color(0xFF1B1E21),
-    text = DarkText,
-    accent = Color(0xFF8FB3D8),
-    accent100 = Color(0xFF1D2D3D),
-    accent600 = Color(0xFFB5D9FD),
-    accent700 = Color(0xFFA9CDF1),
-    accent800 = Color(0xFFD6EBFF),
-    neutral500 = Color(0xFF98989B),
-    divider = DarkText.copy(alpha = 0.18f),
+    bg = Color(0xFF172421),
+    surface = Color(0xFF22332E),
+    surfaceVariant = Color(0xFF2C3F39),
+    text = Color(0xFFE5EEE8),
+    muted = Color(0xFFA3B4AD),
+    primary = Color(0xFF91C5B2),
+    primaryInk = Color(0xFF91C5B2),
+    onPrimary = Color(0xFF10211C),
+    primaryContainer = Color(0xFF2F4C44),
+    onPrimaryContainer = Color(0xFFC4E5D8),
+    rest = Color(0xFFB7A8E5),
+    restInk = Color(0xFFCDC2F2),
+    restContainer = Color(0xFF3A3652),
+    border = Color(0xFF32463F),
     isDark = true,
     tones = DarkTones,
 )
 
 /** Capture is always dark, over the camera feed. */
 object CaptureColors {
-    val background = Color(0xFF0E1012)
-    val foreground = Color(0xFFEEF0F2)
-    val guide = Color(0xFF9EC3EA)
-    val detected = Color(0xFF7FD1A0)
+    val background = Color(0xFF0F1A17)
+    val foreground = Color(0xFFEEF4F0)
+    val guide = Color(0xFF91C5B2)
+    val onGuide = Color(0xFF10211C)
+    val detected = Color(0xFFA8E0C2)
 }
 
 val LocalVitalsColors = staticCompositionLocalOf { LightVitalsColors }
 
 fun VitalsColors.toColorScheme(): ColorScheme {
-    val opaque = { c: Color -> c.compositeOver(bg) }
     val base = if (isDark) darkColorScheme() else lightColorScheme()
     return base.copy(
-        primary = accent,
-        onPrimary = bg,
-        primaryContainer = accent100,
-        onPrimaryContainer = accent800,
-        inversePrimary = accent700,
-        secondary = accent,
-        onSecondary = bg,
-        secondaryContainer = accent100,
-        onSecondaryContainer = accent800,
-        tertiary = accent700,
-        onTertiary = bg,
-        tertiaryContainer = accent100,
-        onTertiaryContainer = accent800,
+        primary = primary,
+        onPrimary = onPrimary,
+        primaryContainer = primaryContainer,
+        onPrimaryContainer = onPrimaryContainer,
+        inversePrimary = primaryInk,
+        secondary = primary,
+        onSecondary = onPrimary,
+        secondaryContainer = primaryContainer,
+        onSecondaryContainer = onPrimaryContainer,
+        tertiary = rest,
+        onTertiary = onPrimary,
+        tertiaryContainer = restContainer,
+        onTertiaryContainer = restInk,
         background = bg,
         onBackground = text,
-        surface = bg,
+        surface = surface,
         onSurface = text,
-        surfaceVariant = surface,
-        onSurfaceVariant = opaque(text(0.65f)),
+        surfaceVariant = surfaceVariant,
+        onSurfaceVariant = muted,
         surfaceTint = Color.Transparent,
         inverseSurface = text,
         inverseOnSurface = bg,
         error = error.base,
-        onError = bg,
-        errorContainer = opaque(error.fill),
+        onError = onPrimary,
+        errorContainer = error.fill.compositeOver(surface),
         onErrorContainer = error.ink,
-        outline = opaque(divider),
-        outlineVariant = opaque(hairline),
-        scrim = Color(0xFF2B2B2D),
-        surfaceBright = bg,
+        outline = muted,
+        outlineVariant = border,
+        scrim = Color(0xFF0B1210),
+        surfaceBright = surface,
         surfaceDim = bg,
-        surfaceContainerLowest = bg,
-        surfaceContainerLow = bg,
-        surfaceContainer = bg,
-        surfaceContainerHigh = bg,
-        surfaceContainerHighest = surface,
+        surfaceContainerLowest = surface,
+        surfaceContainerLow = surface,
+        surfaceContainer = surface,
+        surfaceContainerHigh = surface,
+        surfaceContainerHighest = surfaceVariant,
     )
 }

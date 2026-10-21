@@ -2,38 +2,38 @@ package com.cyberkryption.vitals.ui.dashboard
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -44,27 +44,25 @@ import com.cyberkryption.vitals.core.Summary
 import com.cyberkryption.vitals.core.VitalsSummary
 import com.cyberkryption.vitals.ui.DateFormats
 import com.cyberkryption.vitals.ui.components.AdaptiveTiles
-import com.cyberkryption.vitals.ui.components.BlueprintCard
 import com.cyberkryption.vitals.ui.components.DialogText
 import com.cyberkryption.vitals.ui.components.IconAction
-import com.cyberkryption.vitals.ui.components.Kicker
-import com.cyberkryption.vitals.ui.components.OutlinedIconAction
-import com.cyberkryption.vitals.ui.components.PhotoThumb
+import com.cyberkryption.vitals.ui.components.IconCircle
 import com.cyberkryption.vitals.ui.components.PrimaryButton
 import com.cyberkryption.vitals.ui.components.ReadingRow
 import com.cyberkryption.vitals.ui.components.Scale
-import com.cyberkryption.vitals.ui.components.ScreenHeader
+import com.cyberkryption.vitals.ui.components.SecondaryButton
 import com.cyberkryption.vitals.ui.components.Segmented
 import com.cyberkryption.vitals.ui.components.Sparkline
-import com.cyberkryption.vitals.ui.components.StatusTag
+import com.cyberkryption.vitals.ui.components.StatusBadge
+import com.cyberkryption.vitals.ui.components.TextAction
+import com.cyberkryption.vitals.ui.components.VitalsCard
 import com.cyberkryption.vitals.ui.components.VitalsDialog
-import com.cyberkryption.vitals.ui.components.bottomRule
-import com.cyberkryption.vitals.ui.components.dashedLine
+import com.cyberkryption.vitals.ui.components.VitalsLogo
+import com.cyberkryption.vitals.ui.components.dots
 import com.cyberkryption.vitals.ui.components.polyline
 import com.cyberkryption.vitals.ui.rememberDateFormats
 import com.cyberkryption.vitals.ui.theme.Vitals
 import com.cyberkryption.vitals.ui.theme.VitalsType
-import java.time.Instant
 import java.time.LocalDate
 
 @Composable
@@ -73,8 +71,9 @@ fun DashboardScreen(
     onImport: () -> Unit,
     onOpenReading: (Long) -> Unit,
     onSeeAll: () -> Unit,
+    onOpenTrends: () -> Unit,
     onSettings: () -> Unit,
-    showFabs: Boolean,
+    showActions: Boolean,
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory),
 ) {
@@ -82,53 +81,60 @@ fun DashboardScreen(
     val formats = rememberDateFormats()
     val c = Vitals.colors
 
-    Box(modifier.fillMaxSize().background(c.bg)) {
-        Column(Modifier.fillMaxSize()) {
-            ScreenHeader(
-                title = stringResource(R.string.app_name),
-                kicker = state?.let { formats.day.format(it.today) },
-            ) {
-                OverflowMenu(onImport = onImport, onSettings = onSettings)
+    Column(modifier.fillMaxSize().background(c.bg)) {
+        AppHeader(onSettings)
+        val s = state
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            if (s == null) return@Column
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(stringResource(R.string.nav_today), style = VitalsType.screenTitle, modifier = Modifier.semantics { heading() })
+                Text(formats.day.format(s.today), style = VitalsType.subtitle, color = c.muted)
             }
-            val s = state ?: return@Column
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(start = 20.dp, top = 8.dp, end = 20.dp, bottom = if (showFabs) 140.dp else 28.dp),
-                verticalArrangement = Arrangement.spacedBy(22.dp),
-            ) {
-                Segmented(
-                    options = listOf(Span.WEEK to stringResource(R.string.span_7_days), Span.MONTH to stringResource(R.string.span_30_days)),
-                    selected = s.span,
-                    onSelect = viewModel::setSpan,
-                )
-                Tiles(s)
-                Latest(s.latest, formats, onOpenReading, onSeeAll)
-            }
+            Segmented(
+                options = listOf(Span.WEEK to stringResource(R.string.span_7_days), Span.MONTH to stringResource(R.string.span_30_days)),
+                selected = s.span,
+                onSelect = viewModel::setSpan,
+                fillWidth = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            BloodPressureCard(s.summary, s.span, onOpenTrends)
+            AdaptiveTiles(
+                minWidth = 150.dp,
+                gap = 14.dp,
+                tiles = listOf(
+                    { m -> HeartRateCard(s.summary.pulse, s.summary.pulseSeries, onOpenTrends, m) },
+                    { m -> Spo2Card(s.summary.spo2, s.summary.spo2Series, onOpenTrends, m) },
+                ),
+            )
+            Recent(s.latest, s.today, formats, onOpenReading, onSeeAll)
         }
-
-        if (showFabs) {
+        if (showActions) {
             Row(
-                modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Bottom,
             ) {
-                OutlinedIconAction(
-                    icon = R.drawable.ic_image,
-                    contentDescription = stringResource(R.string.action_import),
-                    onClick = onImport,
-                    size = 56.dp,
-                    iconSize = 24.dp,
-                    fill = c.bg,
-                    elevated = true,
-                )
                 PrimaryButton(
                     text = stringResource(R.string.action_scan),
                     onClick = onScan,
                     icon = R.drawable.ic_camera,
                     height = 56.dp,
-                    elevated = true,
+                    modifier = Modifier.weight(1.3f),
+                )
+                SecondaryButton(
+                    text = stringResource(R.string.action_import_short),
+                    onClick = onImport,
+                    icon = R.drawable.ic_upload,
+                    height = 56.dp,
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -147,195 +153,208 @@ fun DashboardScreen(
     }
 }
 
+/** The mark, the app name and Settings. */
 @Composable
-private fun OverflowMenu(onImport: () -> Unit, onSettings: () -> Unit) {
-    var open by remember { mutableStateOf(false) }
+private fun AppHeader(onSettings: () -> Unit) {
+    Row(
+        Modifier.padding(start = 20.dp, top = 12.dp, end = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        VitalsLogo(Modifier.size(34.dp))
+        Text(stringResource(R.string.app_name), style = VitalsType.appTitle, modifier = Modifier.weight(1f))
+        IconAction(R.drawable.ic_settings, stringResource(R.string.settings_title), onSettings)
+    }
+}
+
+@Composable
+private fun CardHeader(icon: Int, container: Color, tint: Color, title: String) {
     val c = Vitals.colors
-    Box {
-        IconAction(R.drawable.ic_more_vertical, stringResource(R.string.action_more), onClick = { open = true })
-        DropdownMenu(
-            expanded = open,
-            onDismissRequest = { open = false },
-            containerColor = c.bg,
-            shadowElevation = 0.dp,
-            tonalElevation = 0.dp,
-            modifier = Modifier.border(1.dp, c.divider),
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.action_import), style = VitalsType.bodyMedium) },
-                onClick = {
-                    open = false
-                    onImport()
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.settings_title), style = VitalsType.bodyMedium) },
-                onClick = {
-                    open = false
-                    onSettings()
-                },
-            )
-        }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        IconCircle(icon, container, tint)
+        Text(title, style = VitalsType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = c.muted, modifier = Modifier.size(20.dp))
     }
 }
 
+/** The headline card: the period's average, its category, the ranges and a compact trend. */
 @Composable
-private fun Tiles(state: DashboardUiState) {
-    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        BloodPressureTile(state.summary, state.span)
-        AdaptiveTiles(
-            minWidth = 156.dp,
-            gap = 20.dp,
-            tiles = listOf(
-                { m -> HeartRateTile(state.summary.pulse, state.summary.pulseSeries, m) },
-                { m -> Spo2Tile(state.summary.spo2, state.summary.spo2Series, m) },
-            ),
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun BloodPressureTile(summary: VitalsSummary, span: Span) {
+private fun BloodPressureCard(summary: VitalsSummary, span: Span, onOpen: () -> Unit) {
     val c = Vitals.colors
     val bp = summary.bloodPressure
-    BlueprintCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp), spacing = 10.dp) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(painterResource(R.drawable.ic_activity), null, tint = c.accent, modifier = Modifier.size(18.dp))
-            Kicker(
-                stringResource(R.string.dashboard_bp_kicker, stringResource(if (span == Span.WEEK) R.string.span_7_day else R.string.span_30_day)),
-                Modifier.weight(1f),
-            )
-            if (bp != null) StatusTag(bp.status, large = true)
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    val tint = lerp(c.surface, c.primaryContainer, if (c.isDark) 0.25f else 0.3f)
+    VitalsCard(Modifier.fillMaxWidth(), onClick = onOpen, color = tint, contentPadding = PaddingValues(18.dp), spacing = 10.dp) {
+        CardHeader(R.drawable.ic_heart_pulse, c.primaryContainer, c.onPrimaryContainer, stringResource(R.string.dashboard_bp_title))
+        if (bp == null) {
+            Text(stringResource(R.string.value_none), style = VitalsType.hero)
             Text(
-                text = bp?.let { "${it.systolic.average}/${it.diastolic.average}" } ?: stringResource(R.string.value_none),
-                style = VitalsType.hero,
-                modifier = Modifier.alignByBaseline(),
+                stringResource(if (span == Span.WEEK) R.string.dashboard_empty_week else R.string.dashboard_empty_month),
+                style = VitalsType.bodyMedium,
+                color = c.muted,
             )
-            Text(stringResource(R.string.unit_mmhg), style = VitalsType.bodyMedium, color = c.text(0.6f), modifier = Modifier.alignByBaseline())
+            return@VitalsCard
         }
-        val scale = Scale.covering(60f, 150f, summary.systolicSeries, summary.diastolicSeries)
-        Canvas(
+        val spoken = stringResource(R.string.a11y_bp_value, bp.systolic.average, bp.diastolic.average)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.clearAndSetSemantics { contentDescription = spoken },
+        ) {
+            Text("${bp.systolic.average} / ${bp.diastolic.average}", style = VitalsType.hero, modifier = Modifier.alignByBaseline())
+            Text(stringResource(R.string.unit_mmhg), style = VitalsType.subtitle, color = c.muted, modifier = Modifier.alignByBaseline())
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatusBadge(bp.status)
+            Text(pluralStringResource(R.plurals.dashboard_readings, bp.count, bp.count), style = VitalsType.metaNumbers, color = c.muted)
+        }
+        Spacer(Modifier.height(2.dp))
+        Row(
             Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .bottomRule(c.divider),
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            val guide = c.text(0.22f)
-            dashedLine(guide, scale.y(120f, size.height))
-            dashedLine(guide, scale.y(80f, size.height))
-            polyline(summary.systolicSeries, scale, c.accent, 2.dp)
-            polyline(summary.diastolicSeries, scale, c.accent, 1.5.dp, dashed = true)
-        }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            if (bp == null) {
-                Text(stringResource(if (span == Span.WEEK) R.string.dashboard_empty_week else R.string.dashboard_empty_month), style = VitalsType.meta, color = c.muted)
-            } else {
-                Text(pluralStringResource(R.plurals.dashboard_readings, bp.count, bp.count), style = VitalsType.metaNumbers, color = c.muted)
-                Text(stringResource(R.string.dashboard_sys_range, bp.systolic.min, bp.systolic.max), style = VitalsType.metaNumbers, color = c.muted)
-                Text(stringResource(R.string.dashboard_dia_range, bp.diastolic.min, bp.diastolic.max), style = VitalsType.metaNumbers, color = c.muted)
+            RangeStat(stringResource(R.string.field_systolic), bp.systolic)
+            Box(Modifier.padding(horizontal = 14.dp).width(1.dp).fillMaxHeight().background(c.divider))
+            RangeStat(stringResource(R.string.field_diastolic), bp.diastolic)
+            Box(Modifier.padding(horizontal = 14.dp).width(1.dp).fillMaxHeight().background(c.divider))
+            val scale = Scale.covering(60f, 150f, summary.systolicSeries, summary.diastolicSeries)
+            val dotRing = tint
+            Canvas(
+                Modifier
+                    .weight(1f)
+                    .height(48.dp)
+                    .padding(vertical = 4.dp),
+            ) {
+                polyline(summary.diastolicSeries, scale, c.primary.copy(alpha = 0.45f), 2.dp)
+                polyline(summary.systolicSeries, scale, c.primary, 2.dp)
+                dots(summary.systolicSeries, scale, c.primary, dotRing, radius = 2.5.dp)
             }
         }
     }
 }
 
 @Composable
-private fun HeartRateTile(pulse: Summary?, series: List<Int>, modifier: Modifier) {
-    SmallTile(
-        icon = R.drawable.ic_heart,
-        label = stringResource(R.string.metric_heart_rate),
-        value = pulse?.average,
-        unit = stringResource(R.string.unit_bpm),
-        series = series,
-        scale = Scale.covering(55f, 85f, series),
-        meta = pulse?.let { stringResource(R.string.dashboard_hr_range, it.min, it.max) },
-        modifier = modifier,
-    )
-}
-
-@Composable
-private fun Spo2Tile(spo2: Summary?, series: List<Int>, modifier: Modifier) {
-    SmallTile(
-        icon = R.drawable.ic_droplet,
-        label = stringResource(R.string.metric_spo2),
-        value = spo2?.average,
-        unit = stringResource(R.string.unit_percent),
-        series = series,
-        scale = Scale.covering(92f, 100f, series),
-        meta = spo2?.let { stringResource(R.string.dashboard_spo2_lowest, it.min) },
-        modifier = modifier,
-    )
-}
-
-@Composable
-private fun SmallTile(
-    icon: Int,
-    label: String,
-    value: Int?,
-    unit: String,
-    series: List<Int>,
-    scale: Scale,
-    meta: String?,
-    modifier: Modifier,
-) {
+private fun RangeStat(label: String, summary: Summary) {
     val c = Vitals.colors
-    BlueprintCard(modifier, spacing = 6.dp) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(painterResource(icon), null, tint = c.accent700, modifier = Modifier.size(16.dp))
-            Kicker(label)
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, style = VitalsType.meta, color = c.muted)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                stringResource(R.string.range, summary.min, summary.max),
+                style = VitalsType.rowTitle,
+                modifier = Modifier.alignByBaseline(),
+            )
+            Text(stringResource(R.string.unit_mmhg), style = VitalsType.caption, color = c.muted, modifier = Modifier.alignByBaseline())
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(value?.toString() ?: stringResource(R.string.value_none), style = VitalsType.tileValue, modifier = Modifier.alignByBaseline())
-            Text(unit, style = VitalsType.control, color = c.text(0.6f), modifier = Modifier.alignByBaseline())
-        }
-        Sparkline(series, scale, c.accent, Modifier.fillMaxWidth().height(32.dp))
-        Text(meta ?: stringResource(R.string.dashboard_no_data), style = VitalsType.metaNumbers, color = c.muted)
     }
 }
 
 @Composable
-private fun Latest(
+private fun HeartRateCard(pulse: Summary?, series: List<Int>, onOpen: () -> Unit, modifier: Modifier) {
+    val c = Vitals.colors
+    MetricCard(
+        icon = R.drawable.ic_heart_filled,
+        container = c.primaryContainer,
+        tint = c.primary,
+        title = stringResource(R.string.metric_heart_rate),
+        value = pulse?.average,
+        unit = stringResource(R.string.unit_bpm),
+        series = series,
+        scale = Scale.covering(55f, 85f, series),
+        line = c.primary,
+        onOpen = onOpen,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun Spo2Card(spo2: Summary?, series: List<Int>, onOpen: () -> Unit, modifier: Modifier) {
+    val c = Vitals.colors
+    MetricCard(
+        icon = R.drawable.ic_droplet_filled,
+        container = c.restContainer,
+        tint = c.rest,
+        title = stringResource(R.string.metric_spo2),
+        value = spo2?.average,
+        unit = stringResource(R.string.unit_percent),
+        series = series,
+        scale = Scale.covering(92f, 100f, series),
+        line = c.rest,
+        onOpen = onOpen,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun MetricCard(
+    icon: Int,
+    container: Color,
+    tint: Color,
+    title: String,
+    value: Int?,
+    unit: String,
+    series: List<Int>,
+    scale: Scale,
+    line: Color,
+    onOpen: () -> Unit,
+    modifier: Modifier,
+) {
+    val c = Vitals.colors
+    VitalsCard(modifier, onClick = onOpen, contentPadding = PaddingValues(16.dp), spacing = 10.dp) {
+        CardHeader(icon, container, tint, title)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(value?.toString() ?: stringResource(R.string.value_none), style = VitalsType.tileValue, modifier = Modifier.alignByBaseline())
+            if (value != null) Text(unit, style = VitalsType.subtitle, color = c.muted, modifier = Modifier.alignByBaseline())
+        }
+        if (series.isEmpty()) {
+            Text(stringResource(R.string.dashboard_no_data), style = VitalsType.meta, color = c.muted, modifier = Modifier.height(40.dp))
+        } else {
+            Sparkline(series, scale, line, Modifier.fillMaxWidth().height(40.dp), area = true)
+        }
+    }
+}
+
+@Composable
+private fun Recent(
     latest: List<Reading>,
+    today: LocalDate,
     formats: DateFormats,
     onOpenReading: (Long) -> Unit,
     onSeeAll: () -> Unit,
 ) {
     val c = Vitals.colors
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.dashboard_latest), style = VitalsType.section, modifier = Modifier.weight(1f))
-            Box(
-                Modifier
-                    .heightIn(min = 40.dp)
-                    .clickable(role = Role.Button, onClick = onSeeAll)
-                    .padding(start = 12.dp),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Text(stringResource(R.string.action_see_all), style = VitalsType.link, color = c.accent700)
-            }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.dashboard_recent),
+                style = VitalsType.section,
+                modifier = Modifier.weight(1f).semantics { heading() },
+            )
+            if (latest.isNotEmpty()) TextAction(stringResource(R.string.action_see_all), onSeeAll, style = VitalsType.link)
         }
         if (latest.isEmpty()) {
-            Text(stringResource(R.string.dashboard_latest_empty), style = VitalsType.bodyMedium, color = c.muted, modifier = Modifier.padding(vertical = 12.dp))
+            VitalsCard(Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.dashboard_latest_empty), style = VitalsType.bodyMedium, color = c.muted)
+            }
         }
-        val today = formats.date(Instant.now())
         latest.forEach { reading ->
             ReadingRow(
                 reading = reading,
-                meta = latestMeta(reading, formats, today),
+                title = whenTaken(reading, formats, today),
                 onClick = { onOpenReading(reading.id) },
-            ) {
-                PhotoThumb(reading.photoUri, 48.dp)
-            }
+            )
         }
     }
 }
 
+/** "8:42 AM" today, "Yesterday, 7:30 PM", then "Mon, Oct 19, 7:30 PM". */
 @Composable
-private fun latestMeta(reading: Reading, formats: DateFormats, today: LocalDate): String {
+private fun whenTaken(reading: Reading, formats: DateFormats, today: LocalDate): String {
     val day = formats.date(reading.takenAt)
     val time = formats.format(formats.time, reading.takenAt)
-    val whenText = if (day == today) stringResource(R.string.today_at, time) else "${formats.day.format(day)} $time"
-    return listOfNotNull(whenText, reading.note?.takeIf { it.isNotBlank() }).joinToString(" · ")
+    return when (day) {
+        today -> time
+        today.minusDays(1) -> stringResource(R.string.yesterday_at, time)
+        else -> stringResource(R.string.day_at, formats.day.format(day), time)
+    }
 }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#F2F2F3</color>
-    <color name="launcher_background">#5980A6</color>
-    <color name="launcher_foreground">#F2F2F3</color>
+    <color name="bg">#F6F7F2</color>
+    <color name="launcher_background">#477C70</color>
+    <color name="launcher_foreground">#FFFFFF</color>
+    <color name="launcher_foreground_soft">#CDE6DC</color>
 </resources>

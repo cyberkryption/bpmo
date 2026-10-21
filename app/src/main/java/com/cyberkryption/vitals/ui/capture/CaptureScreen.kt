@@ -30,6 +30,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +44,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -67,8 +70,6 @@ import com.cyberkryption.vitals.extraction.toBoxes
 import com.cyberkryption.vitals.ui.components.IconAction
 import com.cyberkryption.vitals.ui.components.SegmentedColors
 import com.cyberkryption.vitals.ui.components.Segmented
-import com.cyberkryption.vitals.ui.components.hatching
-import com.cyberkryption.vitals.ui.components.registrationMarks
 import com.cyberkryption.vitals.ui.findActivity
 import com.cyberkryption.vitals.ui.theme.CaptureColors
 import com.cyberkryption.vitals.ui.theme.VitalsType
@@ -108,8 +109,6 @@ fun CaptureScreen(
                 onCaptured = onCaptured,
                 registerShutter = { shutter = it },
             )
-        } else {
-            Box(Modifier.fillMaxSize().hatching(Color.White.copy(alpha = 0.05f), period = 16.dp))
         }
 
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -134,10 +133,9 @@ fun CaptureScreen(
                     selected = state.mode,
                     onSelect = viewModel::setMode,
                     colors = SegmentedColors(
-                        border = fg.copy(alpha = 0.35f),
-                        background = CaptureColors.background.copy(alpha = 0.6f),
+                        track = Color.White.copy(alpha = 0.12f),
                         selected = CaptureColors.guide,
-                        selectedText = CaptureColors.background,
+                        selectedText = CaptureColors.onGuide,
                         text = fg,
                     ),
                 )
@@ -155,8 +153,7 @@ fun CaptureScreen(
                         .widthIn(max = 300.dp)
                         .fillMaxWidth()
                         .aspectRatio(if (state.mode == ReadingType.BP) 3f / 4f else 16f / 9f)
-                        .border(1.5.dp, CaptureColors.guide)
-                        .registrationMarks(CaptureColors.guide, size = 22.dp),
+                        .border(2.5.dp, CaptureColors.guide, RoundedCornerShape(28.dp)),
                 )
                 if (!granted) {
                     PermissionPrompt(asked = asked, onRequest = { permission.launch(Manifest.permission.CAMERA) })
@@ -173,6 +170,7 @@ fun CaptureScreen(
             Row(
                 Modifier
                     .fillMaxWidth()
+                    .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
                     .background(CaptureColors.background.copy(alpha = 0.85f))
                     .navigationBarsPadding()
                     .padding(start = 28.dp, top = 20.dp, end = 28.dp, bottom = 28.dp),
@@ -182,7 +180,8 @@ fun CaptureScreen(
                     Box(
                         Modifier
                             .size(52.dp)
-                            .border(1.dp, fg.copy(alpha = 0.35f))
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.12f))
                             .clickable(role = Role.Button, onClick = onGallery),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -191,24 +190,27 @@ fun CaptureScreen(
                 }
                 Box(
                     Modifier
-                        .size(76.dp)
-                        .border(2.dp, fg)
+                        .size(78.dp)
+                        .clip(CircleShape)
+                        .border(3.dp, fg, CircleShape)
                         .clickable(enabled = granted && !state.capturing, role = Role.Button, onClick = { shutter?.invoke() })
                         .semantics { contentDescription = shutterLabel },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Box(Modifier.size(60.dp).background(CaptureColors.guide.copy(alpha = if (state.capturing) 0.5f else 1f)))
+                    Box(Modifier.size(62.dp).clip(CircleShape).background(CaptureColors.guide.copy(alpha = if (state.capturing) 0.5f else 1f)))
                 }
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
                     val autoState = stringResource(if (state.autoCapture) R.string.capture_auto_on else R.string.capture_auto_off)
                     Text(
-                        stringResource(if (state.autoCapture) R.string.capture_auto else R.string.capture_manual).uppercase(),
-                        style = VitalsType.overline,
-                        color = fg.copy(alpha = 0.6f),
+                        stringResource(if (state.autoCapture) R.string.capture_auto else R.string.capture_manual),
+                        style = VitalsType.control,
+                        color = if (state.autoCapture) CaptureColors.onGuide else fg,
                         modifier = Modifier
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(if (state.autoCapture) CaptureColors.guide else Color.White.copy(alpha = 0.12f))
                             .clickable(role = Role.Switch, onClick = viewModel::toggleAuto)
                             .semantics { stateDescription = autoState }
-                            .padding(vertical = 14.dp, horizontal = 4.dp),
+                            .padding(vertical = 12.dp, horizontal = 16.dp),
                     )
                 }
             }
@@ -298,13 +300,14 @@ private fun DetectionChip(state: CaptureUiState) {
     }
     Row(
         Modifier
+            .clip(RoundedCornerShape(percent = 50))
             .background(CaptureColors.background.copy(alpha = 0.75f))
-            .border(1.dp, CaptureColors.guide.copy(alpha = 0.5f))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .border(1.dp, CaptureColors.guide.copy(alpha = 0.5f), RoundedCornerShape(percent = 50))
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(Modifier.size(8.dp).background(CaptureColors.detected))
+        Box(Modifier.size(8.dp).clip(CircleShape).background(CaptureColors.detected))
         Text(stringResource(R.string.capture_found, values), style = VitalsType.control.copy(fontFeatureSettings = "tnum"), color = fg)
     }
 }
@@ -320,7 +323,8 @@ private fun PermissionPrompt(asked: Boolean, onRequest: () -> Unit) {
         Text(stringResource(R.string.capture_permission), style = VitalsType.control, color = fg.copy(alpha = 0.75f), textAlign = TextAlign.Center)
         Box(
             Modifier
-                .border(1.dp, fg.copy(alpha = 0.35f))
+                .clip(RoundedCornerShape(percent = 50))
+                .background(CaptureColors.guide)
                 .clickable(role = Role.Button) {
                     if (blocked) {
                         context.startActivity(
@@ -330,12 +334,12 @@ private fun PermissionPrompt(asked: Boolean, onRequest: () -> Unit) {
                         onRequest()
                     }
                 }
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 22.dp, vertical = 12.dp),
         ) {
             Text(
                 stringResource(if (blocked) R.string.capture_open_settings else R.string.capture_allow),
                 style = VitalsType.button,
-                color = fg,
+                color = CaptureColors.onGuide,
             )
         }
     }

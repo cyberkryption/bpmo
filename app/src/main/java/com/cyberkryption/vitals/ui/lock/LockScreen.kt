@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,8 +41,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -55,13 +56,13 @@ import androidx.fragment.app.FragmentActivity
 import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.data.RelockTimeout
 import com.cyberkryption.vitals.security.Biometrics
-import com.cyberkryption.vitals.ui.components.OutlineButton
-import com.cyberkryption.vitals.ui.components.registrationMarks
+import com.cyberkryption.vitals.ui.components.SecondaryButton
+import com.cyberkryption.vitals.ui.components.VitalsLogo
 import com.cyberkryption.vitals.ui.findActivity
 import com.cyberkryption.vitals.ui.theme.Vitals
 import com.cyberkryption.vitals.ui.theme.VitalsType
 
-private enum class LockStatus { Idle, Scanning, Failed }
+internal enum class LockStatus { Idle, Scanning, Failed }
 
 private const val MAX_BIOMETRIC_ATTEMPTS = 3
 
@@ -198,8 +199,9 @@ fun LockScreen(relockTimeout: RelockTimeout, onUnlocked: () -> Unit) {
     )
 }
 
+/** The lock screen's content, separate from the prompt that drives it. */
 @Composable
-private fun LockContent(
+internal fun LockContent(
     status: LockStatus,
     attemptsLeft: Int,
     relockTimeout: RelockTimeout,
@@ -207,7 +209,7 @@ private fun LockContent(
     onUseCredential: () -> Unit,
 ) {
     val c = Vitals.colors
-    val ring = if (status == LockStatus.Failed) c.danger.base else c.accent
+    val ring = if (status == LockStatus.Failed) c.danger.base else c.primary
     val (message, detail) = when (status) {
         LockStatus.Idle -> stringResource(R.string.lock_idle) to stringResource(R.string.lock_idle_detail)
         LockStatus.Scanning -> stringResource(R.string.lock_scanning) to stringResource(R.string.lock_scanning_detail)
@@ -216,7 +218,7 @@ private fun LockContent(
     }
     val messageColor = when (status) {
         LockStatus.Idle -> c.text
-        LockStatus.Scanning -> c.accent700
+        LockStatus.Scanning -> c.primaryInk
         LockStatus.Failed -> c.danger.ink
     }
 
@@ -229,37 +231,29 @@ private fun LockContent(
             verticalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
-                Modifier
-                    .size(64.dp)
-                    .border(1.dp, c.divider)
-                    .registrationMarks(c.mark),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(painterResource(R.drawable.ic_activity), null, tint = c.accent, modifier = Modifier.size(30.dp))
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            VitalsLogo(Modifier.size(56.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.lock_title), style = VitalsType.lockTitle, textAlign = TextAlign.Center)
                 Text(
                     stringResource(R.string.lock_body),
                     style = VitalsType.bodyLarge,
-                    color = c.text(0.65f),
+                    color = c.muted,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.widthIn(max = 280.dp),
                 )
             }
             SensorButton(ringColor = ring, scanning = status == LockStatus.Scanning, onClick = onSensor)
             Column(
-                Modifier.heightIn(min = 44.dp),
+                Modifier.heightIn(min = 48.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(message, style = VitalsType.status, color = messageColor)
-                Text(detail, style = VitalsType.control, color = c.text(0.6f))
+                Text(detail, style = VitalsType.meta, color = c.muted)
             }
         }
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlineButton(stringResource(R.string.lock_use_credential), onUseCredential, Modifier.fillMaxWidth())
+            SecondaryButton(stringResource(R.string.lock_use_credential), onUseCredential, Modifier.fillMaxWidth())
             Text(
                 stringResource(
                     when (relockTimeout) {
@@ -269,7 +263,7 @@ private fun LockContent(
                     },
                 ),
                 style = VitalsType.meta,
-                color = c.text(0.55f),
+                color = c.muted,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -277,36 +271,43 @@ private fun LockContent(
     }
 }
 
-/** 112dp square sensor target; a 2dp scan line sweeps across it while the prompt is up. */
+/** Round sensor target on a tonal fill; a halo pulses out from it while the prompt is up. */
 @Composable
 private fun SensorButton(ringColor: Color, scanning: Boolean, onClick: () -> Unit) {
     val c = Vitals.colors
-    val sweep = rememberInfiniteTransition(label = "scan")
-    val position by sweep.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(tween(1100, easing = LinearEasing), RepeatMode.Reverse),
-        label = "scanLine",
+    val pulse = rememberInfiniteTransition(label = "scan")
+    val progress by pulse.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart),
+        label = "halo",
     )
     Box(
         Modifier
-            .size(112.dp)
-            .border(1.5.dp, ringColor)
-            .clickable(role = Role.Button, onClickLabel = stringResource(R.string.lock_sensor), onClick = onClick)
-            .drawWithContent {
-                drawContent()
+            .size(150.dp)
+            .drawBehind {
                 if (scanning) {
-                    val y = size.height * position
-                    drawLine(c.accent, Offset(0f, y), Offset(size.width, y), 2.dp.toPx())
+                    val base = 56.dp.toPx()
+                    drawCircle(ringColor.copy(alpha = 0.35f * (1f - progress)), radius = base + (size.minDimension / 2 - base) * progress)
                 }
             },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            painterResource(R.drawable.ic_fingerprint),
-            contentDescription = stringResource(R.string.lock_sensor),
-            tint = ringColor,
-            modifier = Modifier.size(56.dp),
-        )
+        Box(
+            Modifier
+                .size(112.dp)
+                .clip(CircleShape)
+                .background(c.primaryContainer)
+                .border(2.dp, ringColor, CircleShape)
+                .clickable(role = Role.Button, onClickLabel = stringResource(R.string.lock_sensor), onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painterResource(R.drawable.ic_fingerprint),
+                contentDescription = stringResource(R.string.lock_sensor),
+                tint = if (ringColor == c.primary) c.onPrimaryContainer else ringColor,
+                modifier = Modifier.size(56.dp),
+            )
+        }
     }
 }

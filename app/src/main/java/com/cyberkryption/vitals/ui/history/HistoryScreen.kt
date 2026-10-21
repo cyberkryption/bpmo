@@ -3,7 +3,6 @@ package com.cyberkryption.vitals.ui.history
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,10 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -41,7 +42,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,21 +56,22 @@ import com.cyberkryption.vitals.ui.DateFormats
 import com.cyberkryption.vitals.ui.components.ChipStyle
 import com.cyberkryption.vitals.ui.components.ChoiceChip
 import com.cyberkryption.vitals.ui.components.IconAction
-import com.cyberkryption.vitals.ui.components.Kicker
 import com.cyberkryption.vitals.ui.components.ReadingRow
 import com.cyberkryption.vitals.ui.components.ScreenHeader
-import com.cyberkryption.vitals.ui.components.TypeIcon
+import com.cyberkryption.vitals.ui.components.SectionLabel
+import com.cyberkryption.vitals.ui.components.cardSurface
 import com.cyberkryption.vitals.ui.detail.ReadingDetailScreen
 import com.cyberkryption.vitals.ui.isMediumOrWider
 import com.cyberkryption.vitals.ui.rememberDateFormats
 import com.cyberkryption.vitals.ui.theme.Vitals
+import com.cyberkryption.vitals.ui.theme.VitalsShape
 import com.cyberkryption.vitals.ui.theme.VitalsType
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 /**
  * History list with Reading detail. One pane at a time when compact; at medium width and up
- * the 360dp list sits beside the detail, which then hides its back arrow.
+ * the list sits beside the detail, which then hides its back arrow.
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -159,12 +164,12 @@ private fun HistoryList(
             )
         } else {
             ScreenHeader(title = stringResource(R.string.history_title)) {
-                IconAction(R.drawable.ic_search, stringResource(R.string.action_search), onClick = { searching = true }, iconSize = 22.dp)
+                IconAction(R.drawable.ic_search, stringResource(R.string.action_search), onClick = { searching = true })
             }
         }
         val s = state ?: return@Column
         Row(
-            Modifier.padding(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 4.dp),
+            Modifier.padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             HistoryFilter.entries.forEach { f ->
@@ -192,32 +197,27 @@ private fun HistoryList(
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            // Rows bleed 8dp into the 20dp gutter so the selection tint has room; content stays on the 20dp line.
-            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 24.dp),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             s.groups.forEach { group ->
                 stickyHeader(key = "day-${group.date}") {
-                    Kicker(
+                    SectionLabel(
                         dayTitle(group, s.today, formats),
                         Modifier
                             .fillMaxWidth()
                             .background(c.bg)
-                            .padding(start = 8.dp, top = 16.dp, end = 8.dp, bottom = 4.dp),
+                            .padding(start = 4.dp, top = 14.dp, bottom = 2.dp)
+                            .semantics { heading() },
                     )
                 }
                 items(group.readings, key = { it.id }) { reading ->
                     ReadingRow(
                         reading = reading,
-                        meta = listOfNotNull(
-                            formats.format(formats.time, reading.takenAt),
-                            reading.note?.takeIf { it.isNotBlank() },
-                        ).joinToString(" · "),
+                        title = formats.format(formats.time, reading.takenAt),
                         onClick = { onSelect(reading.id) },
                         selected = reading.id == selectedId,
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-                    ) {
-                        TypeIcon(reading.type)
-                    }
+                    )
                 }
             }
         }
@@ -236,33 +236,36 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit, onClose: (
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
     Row(
-        modifier = Modifier.padding(start = 20.dp, top = 12.dp, end = 8.dp, bottom = 4.dp),
+        modifier = Modifier.padding(start = 20.dp, top = 16.dp, end = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,
             singleLine = true,
             textStyle = VitalsType.bodyLarge.copy(color = c.text),
-            cursorBrush = SolidColor(c.accent),
+            cursorBrush = SolidColor(c.primary),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             modifier = Modifier
                 .weight(1f)
                 .focusRequester(focus),
             decorationBox = { inner ->
-                Box(
+                Row(
                     Modifier
-                        .background(c.surface)
-                        .border(1.dp, c.divider)
-                        .heightIn(min = 44.dp)
-                        .padding(horizontal = 12.dp),
-                    contentAlignment = Alignment.CenterStart,
+                        .cardSurface(c, VitalsShape.pill, elevation = 0.dp)
+                        .heightIn(min = 48.dp)
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    if (query.isEmpty()) {
-                        Text(stringResource(R.string.history_search_hint), style = VitalsType.bodyLarge, color = c.text(0.5f))
+                    Icon(painterResource(R.drawable.ic_search), contentDescription = null, tint = c.muted, modifier = Modifier.size(20.dp))
+                    Box(Modifier.weight(1f)) {
+                        if (query.isEmpty()) {
+                            Text(stringResource(R.string.history_search_hint), style = VitalsType.bodyLarge, color = c.muted)
+                        }
+                        inner()
                     }
-                    inner()
                 }
             },
         )
