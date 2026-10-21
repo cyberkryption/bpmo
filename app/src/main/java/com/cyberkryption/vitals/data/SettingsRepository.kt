@@ -15,10 +15,25 @@ import java.io.IOException
 
 enum class RelockTimeout(val millis: Long) { IMMEDIATELY(0), ONE_MINUTE(60_000), FIVE_MINUTES(300_000) }
 
+/** Light or dark, or whatever the phone is set to. */
+enum class ThemeMode {
+    SYSTEM,
+    LIGHT,
+    DARK,
+    ;
+
+    fun isDark(systemDark: Boolean): Boolean = when (this) {
+        SYSTEM -> systemDark
+        LIGHT -> false
+        DARK -> true
+    }
+}
+
 data class AppSettings(
     val requireBiometric: Boolean = false,
     val relockTimeout: RelockTimeout = RelockTimeout.ONE_MINUTE,
     val categoryColors: Boolean = true,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
     /** The lock is offered once, after the first saved reading. */
     val lockOffered: Boolean = false,
 )
@@ -34,6 +49,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
                 relockTimeout = prefs[RELOCK_TIMEOUT]?.let { name -> RelockTimeout.entries.firstOrNull { it.name == name } }
                     ?: RelockTimeout.ONE_MINUTE,
                 categoryColors = prefs[CATEGORY_COLORS] ?: true,
+                themeMode = prefs[THEME_MODE]?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } } ?: ThemeMode.SYSTEM,
                 lockOffered = prefs[LOCK_OFFERED] ?: false,
             )
         }
@@ -50,6 +66,10 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[CATEGORY_COLORS] = enabled }
     }
 
+    suspend fun setThemeMode(mode: ThemeMode) {
+        dataStore.edit { it[THEME_MODE] = mode.name }
+    }
+
     suspend fun markLockOffered() {
         dataStore.edit { it[LOCK_OFFERED] = true }
     }
@@ -58,6 +78,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val REQUIRE_BIOMETRIC = booleanPreferencesKey("require_biometric")
         val RELOCK_TIMEOUT = stringPreferencesKey("relock_timeout")
         val CATEGORY_COLORS = booleanPreferencesKey("category_colors")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
         val LOCK_OFFERED = booleanPreferencesKey("lock_offered")
     }
 }

@@ -2,11 +2,13 @@ package com.cyberkryption.vitals.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
@@ -31,6 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cyberkryption.vitals.BuildConfig
 import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.data.RelockTimeout
+import com.cyberkryption.vitals.data.ThemeMode
 import com.cyberkryption.vitals.security.Biometrics
 import com.cyberkryption.vitals.ui.components.IconCircle
 import com.cyberkryption.vitals.ui.components.ScreenHeader
@@ -117,6 +120,37 @@ fun SettingsScreen(
                 }
             }
             Section(stringResource(R.string.settings_display)) {
+                Row(
+                    Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    IconCircle(R.drawable.ic_sun_moon, c.primaryContainer, c.onPrimaryContainer)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(stringResource(R.string.settings_theme), style = VitalsType.cardTitle)
+                        Text(stringResource(R.string.settings_theme_detail), style = VitalsType.meta, color = c.muted)
+                    }
+                }
+                Segmented(
+                    options = listOf(
+                        ThemeMode.SYSTEM to stringResource(R.string.settings_theme_system),
+                        ThemeMode.LIGHT to stringResource(R.string.settings_theme_light),
+                        ThemeMode.DARK to stringResource(R.string.settings_theme_dark),
+                    ),
+                    selected = s.themeMode,
+                    onSelect = viewModel::setThemeMode,
+                    fillWidth = true,
+                    modifier = Modifier
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                        .fillMaxWidth(),
+                )
+                Box(
+                    Modifier
+                        .padding(horizontal = 16.dp)
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(c.divider),
+                )
                 ToggleRow(
                     icon = R.drawable.ic_activity,
                     title = stringResource(R.string.settings_category_colors),

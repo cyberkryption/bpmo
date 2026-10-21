@@ -259,6 +259,11 @@
     <string name="settings_relock_one_minute">1 minute</string>
     <string name="settings_relock_five_minutes">5 minutes</string>
     <string name="settings_display">Display</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_detail">System follows your phone\'s light or dark setting.</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
     <string name="settings_category_colors">Category colours</string>
     <string name="settings_category_colors_detail">Colour readings by blood pressure category. Off shows neutral tags.</string>
     <string name="settings_about">About</string>
