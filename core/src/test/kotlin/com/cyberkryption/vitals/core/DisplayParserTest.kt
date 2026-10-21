@@ -141,6 +141,9 @@ class DisplayParserTest {
         assertEquals(full, DisplayParser.better(full, partial, null))
         assertTrue(DisplayParser.isComplete(full, ReadingType.BP))
         assertEquals(1 / 3f, DisplayParser.completeness(partial, ReadingType.BP))
+        // Text with no values still beats nothing at all.
+        val labels = listOf(word("SYS", 0f, 0f, 20f), word("mmHg", 0f, 40f, 20f))
+        assertEquals(labels, DisplayParser.better(emptyList(), labels, ReadingType.BP))
     }
 
     @Test

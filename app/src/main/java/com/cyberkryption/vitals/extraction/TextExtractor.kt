@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
+import android.util.Log
 import androidx.exifinterface.media.ExifInterface
 import com.cyberkryption.vitals.core.Box
 import com.cyberkryption.vitals.core.DisplayParser
@@ -16,6 +17,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -33,9 +35,22 @@ class TextExtractor(private val context: Context) {
     /** [type] is the monitor type when known; otherwise each reading is judged as the type it looks like. */
     suspend fun recognize(uri: Uri, type: ReadingType? = null): OcrResult? = withContext(Dispatchers.Default) {
         val bitmap = decodeUpright(uri, MAX_SIDE) ?: return@withContext null
-        val segments = SevenSegmentReader.read(bitmap.toGreyImage())
+        // Either reader failing leaves the other's result, rather than losing both.
+        val segments = try {
+            SevenSegmentReader.read(bitmap.toGreyImage())
+        } catch (e: Exception) {
+            Log.w(TAG, "Seven-segment reading failed", e)
+            emptyList()
+        }
         if (DisplayParser.readsClearly(segments, type)) return@withContext OcrResult(bitmap.width, bitmap.height, segments)
-        val text = recognizer.process(InputImage.fromBitmap(bitmap, 0)).await().toBoxes()
+        val text = try {
+            recognizer.process(InputImage.fromBitmap(bitmap, 0)).await().toBoxes()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Text recognition failed", e)
+            emptyList()
+        }
         OcrResult(bitmap.width, bitmap.height, DisplayParser.better(segments, text, type))
     }
 
@@ -56,6 +71,7 @@ class TextExtractor(private val context: Context) {
     }
 
     private companion object {
+        const val TAG = "TextExtractor"
         const val MAX_SIDE = 2048
     }
 }

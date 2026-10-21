@@ -82,9 +82,15 @@ object DisplayParser {
         return detections.size == t.fields.size && detections.values.none { it.isLowConfidence }
     }
 
-    /** Of two readings of the same image, the one that fills more fields; [first] on a tie. */
-    fun better(first: List<TextBox>, second: List<TextBox>, type: ReadingType?): List<TextBox> =
-        if (completeness(second, type) > completeness(first, type)) second else first
+    /**
+     * Of two readings of the same image, the one that fills more fields; [first] on a tie, unless
+     * it found nothing at all, so Review can tell "no values on the display" from "nothing read".
+     */
+    fun better(first: List<TextBox>, second: List<TextBox>, type: ReadingType?): List<TextBox> {
+        val a = completeness(first, type)
+        val b = completeness(second, type)
+        return if (b > a || b == a && first.isEmpty()) second else first
+    }
 
     fun guessType(boxes: List<TextBox>): ReadingType {
         if (boxes.any { isSpo2Label(it.text) || '%' in it.text }) return ReadingType.OXIMETER
