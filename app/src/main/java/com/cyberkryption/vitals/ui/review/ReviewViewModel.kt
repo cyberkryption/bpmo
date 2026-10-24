@@ -93,8 +93,15 @@ class ReviewViewModel(
             }
             val boxes = ocr?.boxes.orEmpty()
             val fromPhoto = DisplayParser.parse(boxes, item.typeHint ?: DisplayParser.guessType(boxes))
-            val live = item.live?.takeIf { it.type == fromPhoto.type && it.detections.size > fromPhoto.detections.size }
-            val form = ReviewForm.from(live ?: fromPhoto, item.takenAt, item.dateSource)
+            // What the camera's frames agreed on fills in what the photo didn't give, and wins
+            // outright when it has more.
+            val live = item.live?.takeIf { it.type == fromPhoto.type }
+            val parsed = when {
+                live == null -> fromPhoto
+                live.detections.size > fromPhoto.detections.size -> live.copy(detections = fromPhoto.detections + live.detections)
+                else -> fromPhoto.copy(detections = live.detections + fromPhoto.detections)
+            }
+            val form = ReviewForm.from(parsed, item.takenAt, item.dateSource)
             _state.update { if (it?.index == index) it.copy(form = form, ocr = ocr) else it }
         }
     }

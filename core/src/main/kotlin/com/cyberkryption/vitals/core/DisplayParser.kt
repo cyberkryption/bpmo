@@ -35,6 +35,9 @@ object DisplayParser {
     /** Digits shorter than this fraction of the tallest are clocks, dates and memory slots. */
     private const val MIN_RELATIVE_HEIGHT = 0.3f
 
+    /** Systolic and diastolic digits are at least this fraction of the tallest; a pulse can be smaller. */
+    private const val ROW_SIZE = 0.6f
+
     /** Characters seven-segment digits are commonly misread as. */
     private val LOOKALIKES = mapOf(
         'O' to '0', 'o' to '0', 'D' to '0', 'Q' to '0',
@@ -56,9 +59,9 @@ object DisplayParser {
     }
 
     fun parse(boxes: List<TextBox>, type: ReadingType): ParsedDisplay {
-        val candidates = candidates(boxes)
+        val (candidates, digitHeight) = candidates(boxes)
         val detections = when (type) {
-            ReadingType.BP -> parseBloodPressure(candidates)
+            ReadingType.BP -> parseBloodPressure(candidates, digitHeight)
             ReadingType.OXIMETER -> parseOximeter(boxes, candidates)
         }
         return ParsedDisplay(type, detections)
@@ -95,7 +98,7 @@ object DisplayParser {
     fun guessType(boxes: List<TextBox>): ReadingType {
         if (boxes.any { isSpo2Label(it.text) || '%' in it.text }) return ReadingType.OXIMETER
         if (boxes.any { it.text.lowercase().let { t -> "mmhg" in t || "sys" in t || "dia" in t } }) return ReadingType.BP
-        val numbers = candidates(boxes)
+        val numbers = candidates(boxes).first
         return if (numbers.size == 2 && numbers.any { it.value in Validation.range(Field.SPO2) }) {
             ReadingType.OXIMETER
         } else {
@@ -103,10 +106,14 @@ object DisplayParser {
         }
     }
 
-    private fun candidates(boxes: List<TextBox>): List<Candidate> {
+    /**
+     * The numbers that could be values, and the tallest number's height. Every number counts
+     * towards that, even one that can't be a value, like a systolic misread as 14.
+     */
+    private fun candidates(boxes: List<TextBox>): Pair<List<Candidate>, Float> {
         val all = joinSplitDigits(boxes).mapNotNull(::candidate)
-        val tallest = all.maxOfOrNull { it.bounds.height } ?: return emptyList()
-        return all.filter { it.bounds.height >= tallest * MIN_RELATIVE_HEIGHT }
+        val tallest = all.maxOfOrNull { it.bounds.height } ?: return emptyList<Candidate>() to 0f
+        return all.filter { it.bounds.height >= tallest * MIN_RELATIVE_HEIGHT && it.value in 20..300 } to tallest
     }
 
     /**
@@ -171,7 +178,6 @@ object DisplayParser {
             }
         }
         val value = digits.toInt()
-        if (value !in 20..300) return null
         val confidence = (box.confidence ?: DEFAULT_CONFIDENCE) * if (substituted) LOOKALIKE_PENALTY else 1f
         return Candidate(value, confidence, box.bounds, hasPercent = '%' in raw)
     }
@@ -188,13 +194,27 @@ object DisplayParser {
 
     private fun sameRow(a: Box, b: Box) = abs(a.centerY - b.centerY) < min(a.height, b.height) / 2
 
-    private fun parseBloodPressure(candidates: List<Candidate>): Map<Field, Detection> {
+    /**
+     * Systolic, diastolic and pulse, top to bottom. Systolic and diastolic share one digit size and
+     * the pulse is usually smaller, so one big number beside smaller ones means a row was missed:
+     * it could be either, so neither is guessed rather than a diastolic taken for a systolic.
+     */
+    private fun parseBloodPressure(candidates: List<Candidate>, digitHeight: Float): Map<Field, Detection> {
         val ordered = readingOrder(candidates)
+        val big = ordered.map { it.bounds.height >= ROW_SIZE * digitHeight }
+        val unsure = big.count { it } == 1 && ordered.size > 1
         val picked = mutableMapOf<Field, Candidate>()
         var next = 0
         for (field in ReadingType.BP.fields) {
             val range = Validation.range(field)
-            val index = (next until ordered.size).firstOrNull { ordered[it].value in range } ?: continue
+            if (field != Field.PULSE && unsure) continue
+            fun fits(i: Int) = when {
+                ordered[i].value !in range -> false
+                field != Field.PULSE -> big[i]
+                // Any size, but not the big number left unplaced.
+                else -> !(unsure && big[i])
+            }
+            val index = (next until ordered.size).firstOrNull(::fits) ?: continue
             picked[field] = ordered[index]
             next = index + 1
         }
@@ -228,9 +248,12 @@ object DisplayParser {
 
         for (field in ReadingType.OXIMETER.fields) {
             if (field in result) continue
-            readingOrder(remaining.filter { it.value in Validation.range(field) })
-                .maxByOrNull { it.bounds.height }
-                ?.let { take(field, it, SIZE_ONLY_PENALTY) }
+            val inRange = readingOrder(remaining.filter { it.value in Validation.range(field) })
+            // Once one value is placed, the other is the nearest number about its size: anything
+            // bigger further away is off the screen.
+            val placed = result.values.firstNotNullOfOrNull { it.bounds }
+            val beside = placed?.let { p -> inRange.filter { it.bounds.height >= 0.5f * p.height }.minByOrNull { distance(p, it.bounds) } }
+            (beside ?: inRange.maxByOrNull { it.bounds.height })?.let { take(field, it, SIZE_ONLY_PENALTY) }
         }
         return result
     }

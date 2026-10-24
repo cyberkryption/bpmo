@@ -72,6 +72,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.core.Field
 import com.cyberkryption.vitals.core.ReadingType
+import com.cyberkryption.vitals.core.fields
 import com.cyberkryption.vitals.extraction.FrameReader
 import com.cyberkryption.vitals.extraction.GuideFrame
 import com.cyberkryption.vitals.ui.components.IconAction
@@ -340,10 +341,13 @@ private fun DetectionChip(state: CaptureUiState) {
     val fg = CaptureColors.foreground
     val found = state.detected ?: return
     val d = found.detections
+    // A value not yet agreed shows as a dash, so it's clear which one a reflection is hiding.
+    fun value(field: Field, suffix: String = "") = d[field]?.let { "${it.value}$suffix" } ?: "–"
     val values = when (found.type) {
-        ReadingType.BP -> "${d[Field.SYSTOLIC]?.value} / ${d[Field.DIASTOLIC]?.value} · ${d[Field.PULSE]?.value}"
-        ReadingType.OXIMETER -> "${d[Field.SPO2]?.value}% · ${d[Field.PULSE]?.value}"
+        ReadingType.BP -> "${value(Field.SYSTOLIC)} / ${value(Field.DIASTOLIC)} · ${value(Field.PULSE)}"
+        ReadingType.OXIMETER -> "${value(Field.SPO2, "%")} · ${value(Field.PULSE)}"
     }
+    val complete = d.keys.containsAll(found.type.fields)
     Row(
         Modifier
             .clip(RoundedCornerShape(percent = 50))
@@ -353,7 +357,7 @@ private fun DetectionChip(state: CaptureUiState) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(CaptureColors.detected))
+        Box(Modifier.size(8.dp).clip(CircleShape).background(if (complete) CaptureColors.detected else fg.copy(alpha = 0.4f)))
         Text(stringResource(R.string.capture_found, values), style = VitalsType.control.copy(fontFeatureSettings = "tnum"), color = fg)
     }
 }

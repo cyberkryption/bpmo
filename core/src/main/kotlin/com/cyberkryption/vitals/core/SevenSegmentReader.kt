@@ -14,6 +14,9 @@ import kotlin.math.roundToInt
  * the lighting, separates the dark segments from the background, splits rows and digits, and
  * reads each digit from which of its seven segments are dark. Each number of two or more digits
  * comes back with its bounds in the input image, for [DisplayParser] to assign to fields.
+ *
+ * A screen lit the other way, light digits on black like most oximeters', is read the same way
+ * from an inverted copy, and also as digits in an ordinary typeface, each read from its shape.
  */
 object SevenSegmentReader {
     /** Height the display is straightened to, so every size rule below works in the same units. */
@@ -48,12 +51,41 @@ object SevenSegmentReader {
 
     fun read(image: GreyImage, displayHeight: Int = DISPLAY_HEIGHT): List<TextBox> {
         val work = image.fitWithin(WORK_SIDE)
-        // The likeliest display areas, best first; whichever gives the most values wins, and a
-        // full set of blood pressure values ends the search.
+        var (numbers, best) = readDisplays(work, displayHeight, Screen.LCD)
+        // Not even two values: perhaps a screen lit the other way, like an oximeter's.
+        if (best.fields < 2) {
+            val (light, score) = readDisplays(work.inverted(), displayHeight, Screen.LIT)
+            if (score > best) numbers = light
+        }
+        val sx = image.width / work.width.toFloat()
+        val sy = image.height / work.height.toFloat()
+        return numbers.map { it.copy(bounds = Box(it.bounds.left * sx, it.bounds.top * sy, it.bounds.right * sx, it.bounds.bottom * sy)) }
+    }
+
+    /** How the digits are drawn: as seven segments, or as solid shapes in an ordinary typeface. */
+    private enum class Glyphs { SEGMENTS, SHAPES }
+
+    /** The kinds of screen, by how they show their digits, as the reader sees them: dark on light. */
+    private enum class Screen(val glyphs: List<Glyphs>) {
+        /** Dark segments on a grey panel lit by the room, so a shadow can fall across it. */
+        LCD(listOf(Glyphs.SEGMENTS)),
+
+        /**
+         * Light digits on black that make their own light, like an oximeter's OLED screen, in
+         * segments or an ordinary typeface. The reader sees them inverted.
+         */
+        LIT(listOf(Glyphs.SEGMENTS, Glyphs.SHAPES)),
+    }
+
+    /**
+     * The numbers on the likeliest display areas in [work], best first: whichever area gives the
+     * most values wins, and a full set of blood pressure values ends the search.
+     */
+    private fun readDisplays(work: GreyImage, displayHeight: Int, screen: Screen): Pair<List<TextBox>, Score> {
         var numbers = emptyList<TextBox>()
         var best = Score(-1, -1)
         for (quad in findDisplays(work)) {
-            val read = readQuad(work, quad, inset = 0.015f, displayHeight)
+            val read = readQuad(work, quad, inset = 0.015f, displayHeight, screen)
             val score = score(read)
             if (score > best) {
                 numbers = read
@@ -64,12 +96,14 @@ object SevenSegmentReader {
         // A close-up or a tight crop has no bezel around the display, so the whole image is the fallback.
         if (best.fields < 2) {
             val whole = Quad.of(Box(0f, 0f, work.width.toFloat(), work.height.toFloat()))
-            val read = readQuad(work, whole, inset = 0f, displayHeight)
-            if (score(read) > best) numbers = read
+            val read = readQuad(work, whole, inset = 0f, displayHeight, screen)
+            val score = score(read)
+            if (score > best) {
+                numbers = read
+                best = score
+            }
         }
-        val sx = image.width / work.width.toFloat()
-        val sy = image.height / work.height.toFloat()
-        return numbers.map { it.copy(bounds = Box(it.bounds.left * sx, it.bounds.top * sy, it.bounds.right * sx, it.bounds.bottom * sy)) }
+        return numbers to best
     }
 
     /** How good a read is: the most fields it fills as either monitor type, then how many numbers it found. */
@@ -285,7 +319,8 @@ object SevenSegmentReader {
         return Quad(corners[0]!!, corners[1]!!, corners[2]!!, corners[3]!!)
     }
 
-    private fun readQuad(image: GreyImage, quad: Quad, inset: Float, displayHeight: Int): List<TextBox> {
+    /** The numbers in [quad], read as each kind of digit the [screen] may show, keeping the best read. */
+    private fun readQuad(image: GreyImage, quad: Quad, inset: Float, displayHeight: Int, screen: Screen): List<TextBox> {
         val area = quad.inset(inset)
         val aspect = (area.topWidth + area.bottomWidth) / (area.leftHeight + area.rightHeight)
         val w = (displayHeight * aspect).roundToInt().coerceIn(displayHeight / 4, displayHeight * 3)
@@ -297,32 +332,53 @@ object SevenSegmentReader {
                 straight[y * w + x] = image.sample(p.x, p.y)
             }
         }
-        val dark = clean(threshold(straight, w, h), w, h)
-        return numbers(dark, w, h).map { (text, box, confidence) ->
-            val corners = listOf(
-                area.map(box.left / w, box.top / h), area.map(box.right / w, box.top / h),
-                area.map(box.right / w, box.bottom / h), area.map(box.left / w, box.bottom / h),
-            )
-            TextBox(
-                text = text,
-                bounds = Box(corners.minOf { it.x }, corners.minOf { it.y }, corners.maxOf { it.x }, corners.maxOf { it.y }),
-                confidence = confidence,
-            )
-        }
+        val dark = clean(threshold(straight, w, h, screen), w, h)
+        return screen.glyphs.map { style ->
+            val found = when (style) {
+                Glyphs.SEGMENTS -> numbers(dark, w, h)
+                Glyphs.SHAPES -> shapeNumbers(dark, w, h)
+            }
+            found.map { (text, box, confidence) ->
+                val corners = listOf(
+                    area.map(box.left / w, box.top / h), area.map(box.right / w, box.top / h),
+                    area.map(box.right / w, box.bottom / h), area.map(box.left / w, box.bottom / h),
+                )
+                TextBox(
+                    text = text,
+                    bounds = Box(corners.minOf { it.x }, corners.minOf { it.y }, corners.maxOf { it.x }, corners.maxOf { it.y }),
+                    confidence = confidence,
+                )
+            }
+        }.maxBy(::score)
     }
 
-    /** Dark segments: pixels clearly darker than their surroundings once the lighting is evened out. */
-    private fun threshold(grey: FloatArray, w: Int, h: Int): BooleanArray {
+    /**
+     * Dark segments: pixels clearly darker than their surroundings once the lighting is evened out.
+     * The surroundings are the local mean, checked against the local brightness with thin strokes
+     * filled in, which keeps edges sharp:
+     * - An LCD lit by the room can be half in shadow. The darker of the two stops the shadowed side
+     *   being judged against the lit side.
+     * - A lit screen is evenly black right up to its digits, so evenly light as the reader sees it.
+     *   The lighter of the two stops a dark case around it pulling the screen's level down.
+     */
+    private fun threshold(grey: FloatArray, w: Int, h: Int, screen: Screen): BooleanArray {
         val background = boxMean(grey, w, h, h / 10)
+        val sharp = closing(grey, w, h, h / 20)
+        for (i in background.indices) {
+            background[i] = when (screen) {
+                Screen.LCD -> min(background[i], sharp[i])
+                Screen.LIT -> max(background[i], sharp[i])
+            }
+        }
         val ratio = FloatArray(w * h) { grey[it] / max(background[it], 1f) }
         val cut = (otsu(IntArray(w * h) { (ratio[it] * 200).toInt().coerceIn(0, 255) }) / 200f).coerceIn(0.6f, 0.9f)
         return BooleanArray(w * h) { ratio[it] < cut }
     }
 
     /**
-     * Drops the bezel's shadow along the edges, specks of noise, and solid blocks such as a level
-     * bar's squares, which can sit between two rows of digits and join them. Segments are long and
-     * thin, so they stay.
+     * Drops the bezel's shadow along the edges, specks of noise, solid blocks such as a level bar's
+     * squares, which can sit between two rows of digits and join them, and outlines around the
+     * digits, such as a screen's frame, which join every row. Segments are long and thin, so they stay.
      */
     private fun clean(dark: BooleanArray, w: Int, h: Int): BooleanArray {
         val parts = Components(dark, w, h)
@@ -332,7 +388,9 @@ object SevenSegmentReader {
             val bw = parts.x1[i] - parts.x0[i] + 1
             val bh = parts.y1[i] - parts.y0[i] + 1
             val block = parts.area[i] > 0.8f * bw * bh && max(bw, bh) < 1.8f * min(bw, bh)
-            keep[i + 1] = !parts.touchesEdge(i) && parts.area[i] > minArea && !block
+            // Big but mostly empty: no digit is both.
+            val outline = bw > 0.3f * w && bh > 0.3f * h && parts.area[i] < 0.15f * bw * bh
+            keep[i + 1] = !parts.touchesEdge(i) && parts.area[i] > minArea && !block && !outline
         }
         return BooleanArray(w * h) { keep[parts.labels[it]] }
     }
@@ -573,6 +631,168 @@ object SevenSegmentReader {
         return ('0' + digit) to 0.6f + 0.4f * clarity
     }
 
+    /**
+     * Numbers in an ordinary typeface, where each digit is one solid shape. Each shape tall enough
+     * to be a digit is read on its own, split first if it's as wide as two run together, and
+     * digits side by side at the same height make up a number. A screen's frame, icons and graphs
+     * read as no digit, so unlike rows of segments they can't join anything up.
+     */
+    private fun shapeNumbers(dark: BooleanArray, w: Int, h: Int): List<Number> {
+        val parts = Components(dark, w, h)
+        val digits = mutableListOf<Number>()
+        val specks = mutableListOf<Box>()
+        for (i in 0 until parts.count) {
+            val bw = parts.x1[i] - parts.x0[i] + 1
+            val bh = parts.y1[i] - parts.y0[i] + 1
+            val box = Box(parts.x0[i].toFloat(), parts.y0[i].toFloat(), parts.x1[i] + 1f, parts.y1[i] + 1f)
+            if (bh < MIN_SHAPE * h) {
+                specks += box
+                continue
+            }
+            if (bw > 3 * bh) continue
+            val own = BooleanArray(bw * bh) { parts.labels[(parts.y0[i] + it / bw) * w + parts.x0[i] + it % bw] == i + 1 }
+            val pieces = if (bw > 0.9f * bh) (bw / (0.7f * bh)).roundToInt() else 1
+            val cuts = splitColumns(own, bw, bh, pieces)
+            val read = (0 until cuts.size - 1).map { k ->
+                shape(own, bw, cuts[k], cuts[k + 1] - 1, 0, bh - 1)?.let { (digit, confidence) ->
+                    Number(digit.toString(), Box(box.left + cuts[k], box.top, box.left + cuts[k + 1], box.bottom), confidence)
+                }
+            }
+            // Digits run together split into whole digits; a letter like m splits into strokes that
+            // pass for 1s, which are too narrow to run into anything.
+            if (pieces == 1 || read.all { it != null && it.text != "1" }) digits += read.filterNotNull()
+        }
+        val numbers = mutableListOf<MutableList<Number>>()
+        for (digit in digits.sortedBy { it.bounds.left }) {
+            val b = digit.bounds
+            val number = numbers.lastOrNull { n ->
+                val last = n.last().bounds
+                val gap = b.left - last.right
+                abs(b.height - last.height) < 0.15f * last.height &&
+                    abs(b.centerY - last.centerY) < 0.15f * last.height &&
+                    gap in -0.1f * last.height..0.35f * last.height &&
+                    // A decimal point between them parts two numbers, like PI 4.7.
+                    specks.none { it.left >= last.right - 1 && it.right <= b.left + 1 && it.top > last.top + 0.6f * last.height && it.bottom <= last.bottom + 0.1f * last.height }
+            }
+            if (number != null) number += digit else numbers += mutableListOf(digit)
+        }
+        return numbers.filter { it.size >= 2 }.map { n ->
+            Number(
+                n.joinToString("") { it.text },
+                Box(n.minOf { it.bounds.left }, n.minOf { it.bounds.top }, n.maxOf { it.bounds.right }, n.maxOf { it.bounds.bottom }),
+                n.minOf { it.confidence },
+            )
+        }
+    }
+
+    /** Column boundaries splitting a shape into [pieces] at its emptiest columns near even spacing, from 0 to [w]. */
+    private fun splitColumns(shape: BooleanArray, w: Int, h: Int, pieces: Int): IntArray {
+        if (pieces < 2) return intArrayOf(0, w)
+        val profile = IntArray(w) { x -> (0 until h).count { shape[it * w + x] } }
+        val reach = w / pieces / 4
+        val cuts = IntArray(pieces + 1)
+        cuts[pieces] = w
+        for (k in 1 until pieces) {
+            val nominal = k * w / pieces
+            cuts[k] = (max(cuts[k - 1] + 1, nominal - reach)..min(w - 1, nominal + reach)).minByOrNull { profile[it] } ?: nominal
+        }
+        return cuts
+    }
+
+    /** Shapes shorter than this share of the display are specks, points and small print, not digits. */
+    private const val MIN_SHAPE = 0.022f
+
+    /**
+     * The digit a glyph in an ordinary typeface shows, from what every typeface shares: its holes
+     * and the sides it's open on. A 6 has a hole low down and is open at the top right; a 2 is
+     * open at the top left and the bottom right above a flat foot; and so on.
+     */
+    private fun shape(dark: BooleanArray, w: Int, x0: Int, x1: Int, y0: Int, y1: Int): Pair<Char, Float>? {
+        var gx0 = x1
+        var gx1 = x0
+        var gy0 = y1
+        var gy1 = y0
+        for (y in y0..y1) {
+            for (x in x0..x1) {
+                if (!dark[y * w + x]) continue
+                if (x < gx0) gx0 = x
+                if (x > gx1) gx1 = x
+                if (y < gy0) gy0 = y
+                if (y > gy1) gy1 = y
+            }
+        }
+        if (gx1 < gx0) return null
+        val gw = gx1 - gx0 + 1
+        val gh = gy1 - gy0 + 1
+        val glyph = BooleanArray(gw * gh) { dark[(gy0 + it / gw) * w + gx0 + it % gw] }
+        val background = Components(BooleanArray(gw * gh) { !glyph[it] }, gw, gh)
+        val holes = (0 until background.count)
+            .filter { !background.touchesEdge(it) && background.area[it] > 0.01f * gw * gh }
+            .map { i -> Box(background.x0[i] / gw.toFloat(), background.y0[i] / gh.toFloat(), (background.x1[i] + 1) / gw.toFloat(), (background.y1[i] + 1) / gh.toFloat()) }
+            .sortedBy { it.top }
+        val fromLeft = FloatArray(gh) { y -> ((0 until gw).firstOrNull { glyph[y * gw + it] } ?: gw) / gw.toFloat() }
+        val fromRight = FloatArray(gh) { y -> ((0 until gw).firstOrNull { glyph[y * gw + gw - 1 - it] } ?: gw) / gw.toFloat() }
+        val width = FloatArray(gh) { 1f - fromLeft[it] - fromRight[it] }
+        fun median(values: FloatArray, from: Float, to: Float): Float {
+            val a = (from * values.size).toInt().coerceIn(0, values.size - 1)
+            val b = (to * values.size).toInt().coerceIn(a + 1, values.size)
+            return values.copyOfRange(a, b).sorted().let { it[it.size / 2] }
+        }
+        val aspect = gw / gh.toFloat()
+        // The share of the height its longest column of ink covers: a 1's stem covers all of it.
+        val stem = (0 until gw).maxOf { x -> (0 until gh).count { glyph[it * gw + x] } } / gh.toFloat()
+        // How far in from the left (l…) and right (r…) the ink starts, as a share of the width, at
+        // the top (…t), upper middle (…u), middle (…m), lower middle (…l) and bottom (…b).
+        val lt = median(fromLeft, 0f, 0.12f)
+        val lu = median(fromLeft, 0.25f, 0.42f)
+        val lm = median(fromLeft, 0.42f, 0.58f)
+        val ll = median(fromLeft, 0.58f, 0.75f)
+        val lb = median(fromLeft, 0.88f, 1f)
+        val rt = median(fromRight, 0f, 0.12f)
+        val ru = median(fromRight, 0.25f, 0.42f)
+        val rm = median(fromRight, 0.42f, 0.58f)
+        val rl = median(fromRight, 0.58f, 0.75f)
+        // How much of the width the ink spans at the top, middle and bottom.
+        val top = median(width, 0f, 0.1f)
+        val mid = median(width, 0.4f, 0.6f)
+        val bottom = median(width, 0.9f, 1f)
+        // Each candidate digit with the margins by which its tests pass; positive passes.
+        val rules: List<Pair<Char, List<Float>>> = when (holes.size) {
+            0 -> listOf(
+                '1' to listOf(0.3f - aspect),
+                '7' to listOf(top - 0.7f, 0.5f - bottom, lu - 0.3f, ll - 0.2f),
+                '2' to listOf(bottom - 0.85f, 0.2f - ru, rl - 0.2f),
+                '1' to listOf(stem - 0.85f, 0.6f - mid, 0.1f - abs(lm - ll), 0.1f - abs(rm - rl)),
+                '3' to listOf(lu - ru, ll - 0.45f, 0.15f - rl, bottom - 0.45f),
+                '5' to listOf(ru - lu - 0.15f, ll - 0.45f, 0.15f - rl),
+                '4' to listOf(0.5f - top, 0.5f - bottom, mid - 0.55f, 0.15f - ll, lt - 0.3f, lb - 0.4f),
+            )
+            1 -> holes[0].let { hole ->
+                listOf(
+                    '0' to listOf(0.3f - hole.top, hole.bottom - 0.7f),
+                    '6' to listOf(hole.centerY - 0.52f, ru - 0.15f, 0.25f - lu, 0.45f - rt),
+                    '9' to listOf(0.52f - hole.centerY, 0.15f - lu, ll - 0.15f, 0.25f - rl),
+                    '4' to listOf(0.52f - hole.centerY, lu - 0.15f, 0.5f - top, 0.8f - bottom, lt - 0.3f),
+                )
+            }
+            2 -> listOf(
+                '8' to listOf(
+                    0.5f - holes[0].centerY, holes[1].centerY - 0.5f,
+                    0.2f - abs(holes[0].centerX - 0.5f), 0.2f - abs(holes[1].centerX - 0.5f),
+                ),
+            )
+            else -> emptyList()
+        }
+        val (digit, margins) = rules.firstOrNull { (_, m) -> m.all { it > 0 } } ?: return null
+        // A digit that only scrapes through is no read: shapes around a screen, like a cable or
+        // a key, can pass every test, but rarely clearly.
+        if (margins.min() < SHAPE_MARGIN / 4) return null
+        return digit to 0.6f + 0.4f * min(1f, margins.min() / SHAPE_MARGIN)
+    }
+
+    /** A shape test passing by this much is clear. */
+    private const val SHAPE_MARGIN = 0.15f
+
     /** Index ranges where [profile] is at least [min]. */
     private fun runs(profile: IntArray, min: Int): List<Pair<Int, Int>> {
         val out = mutableListOf<Pair<Int, Int>>()
@@ -586,6 +806,38 @@ object SevenSegmentReader {
             }
         }
         if (start >= 0) out += start to profile.size - 1
+        return out
+    }
+
+    /**
+     * The background behind dark strokes up to 2[r] wide: the brightest value within [r] of each
+     * pixel, then the darkest of those within [r]. Unlike a mean it keeps a shadow's edge sharp.
+     */
+    private fun closing(values: FloatArray, w: Int, h: Int, r: Int): FloatArray =
+        extreme(extreme(values, w, h, r, largest = true), w, h, r, largest = false)
+
+    /** The largest (or smallest) value within a (2r + 1)² window, one row then one column at a time. */
+    private fun extreme(values: FloatArray, w: Int, h: Int, r: Int, largest: Boolean): FloatArray {
+        fun beats(a: Float, b: Float) = if (largest) a >= b else a <= b
+        val rows = FloatArray(w * h)
+        val queue = IntArray(max(w, h))
+        fun line(from: FloatArray, to: FloatArray, start: Int, step: Int, n: Int) {
+            var head = 0
+            var tail = 0
+            var next = 0
+            for (i in 0 until n) {
+                while (next < n && next <= i + r) {
+                    val v = from[start + next * step]
+                    while (tail > head && beats(v, from[start + queue[tail - 1] * step])) tail--
+                    queue[tail++] = next++
+                }
+                while (queue[head] < i - r) head++
+                to[start + i * step] = from[start + queue[head] * step]
+            }
+        }
+        for (y in 0 until h) line(values, rows, y * w, 1, w)
+        val out = FloatArray(w * h)
+        for (x in 0 until w) line(rows, out, x, w, h)
         return out
     }
 
