@@ -79,6 +79,60 @@ class SevenSegmentReaderTest {
         assertTrue(failures.isEmpty(), failures.joinToString())
     }
 
+    /** Layouts and lighting seen in real photos of a monitor that once defeated the reader. */
+    @Test
+    fun copesWithRealWorldLayouts() {
+        val cases = mapOf(
+            // The level bar beside DIA starts in the gap between the SYS and DIA rows.
+            "level bar between rows" to (monitor(148, 99, 78, barTop = 730) to listOf(148, 99, 78)),
+            // Lit from above, the foot of the display is dimmer than the wall behind (greys as measured).
+            "display dim at the foot" to (monitor(128, 82, 107, lcdBottom = 80, wall = 235, bezel = 10) to listOf(128, 82, 107)),
+            "reflection joining display and wall" to (monitor(162, 103, 79, reflection = true) to listOf(162, 103, 79)),
+            "all of these, tilted" to (rotate(monitor(144, 99, 84, barTop = 730, lcdBottom = 80, wall = 230, bezel = 10, reflection = true), 6.0) to listOf(144, 99, 84)),
+        )
+        val failures = cases.mapNotNull { (name, case) ->
+            val (image, expected) = case
+            bp(image).takeIf { it != expected }?.let { "$name read $it" }
+        }
+        assertTrue(failures.isEmpty(), failures.joinToString())
+    }
+
+    @Test
+    fun copesWithAShadowAcrossTheDisplay() {
+        // In a dim room, the edge of the phone's shadow falls across the top of the systolic digits.
+        for (edge in listOf(515, 535, 560, 580)) {
+            assertEquals(listOf(158, 105, 78), bp(monitor(158, 105, 78, wall = 90, shadowFrom = edge)), "shadow from $edge")
+        }
+    }
+
+    @Test
+    fun readsAnOximetersLitScreen() {
+        val failures = OXIMETER_READINGS.flatMap { (spo2, pulse) ->
+            TYPEFACES.mapNotNull { face ->
+                val d = DisplayParser.parse(SevenSegmentReader.read(oximeter(spo2, pulse, face).toGrey()), ReadingType.OXIMETER).detections
+                val read = listOf(d[Field.SPO2]?.value, d[Field.PULSE]?.value)
+                "$face $spo2/$pulse read $read".takeIf { read != listOf(spo2, pulse) }
+            }
+        }
+        assertTrue(failures.isEmpty(), failures.joinToString())
+    }
+
+    @Test
+    fun aLitScreenFarAwayOrTiltedIsRead() {
+        val base = oximeter(96, 74, "SansSerif")
+        for ((name, image) in mapOf("far away" to farAway(base), "tilted" to rotate(base, 5.0), "blurred" to blur(base))) {
+            val d = DisplayParser.parse(SevenSegmentReader.read(image.toGrey()), ReadingType.OXIMETER).detections
+            assertEquals(listOf(96, 74), listOf(d[Field.SPO2]?.value, d[Field.PULSE]?.value), name)
+        }
+    }
+
+    @Test
+    fun aLitScreensLabelsAndSmallPrintAreNotValues() {
+        // Labels like SpO2 and PRbpm, and the perfusion index 4.7, sit beside the values.
+        val texts = SevenSegmentReader.read(oximeter(97, 72, "Serif").toGrey()).map { it.text }
+        assertEquals(listOf("97", "72"), texts)
+    }
+
     @Test
     fun aCloseUpWithoutBezelIsReadWhole() {
         val base = monitor(136, 92, 88)
@@ -103,8 +157,9 @@ class SevenSegmentReaderTest {
             javaClass.getResource("/displays")?.toURI()?.let(::File),
             System.getProperty("displayPhotos")?.let(::File),
         )
+        val named = Regex("(bp-\\d+-\\d+-\\d+|ox-\\d+-\\d+)(-.*)?")
         val photos = folders.flatMap { it.listFiles()?.toList().orEmpty() }
-            .filter { it.extension.lowercase() in setOf("jpg", "jpeg", "png") }
+            .filter { it.extension.lowercase() in setOf("jpg", "jpeg", "png") && named.matches(it.nameWithoutExtension) }
         val failures = photos.mapNotNull { photo ->
             val parts = photo.nameWithoutExtension.split('-')
             val type = if (parts[0] == "ox") ReadingType.OXIMETER else ReadingType.BP
@@ -123,6 +178,12 @@ class SevenSegmentReaderTest {
             Triple(203, 119, 45), Triple(111, 71, 60), Triple(136, 92, 88),
         )
 
+        /** SpO₂ and pulse readings using every digit. */
+        val OXIMETER_READINGS = listOf(97 to 72, 88 to 105, 94 to 63, 91 to 58, 86 to 120)
+
+        /** Java's stand-ins for the typefaces oximeters use: serif, sans and monospaced. */
+        val TYPEFACES = listOf("Serif", "SansSerif", "Monospaced")
+
         fun BufferedImage.toGrey(): GreyImage {
             val argb = getRGB(0, 0, width, height, null, 0, width)
             return GreyImage.fromArgb(argb, width, height)
@@ -133,19 +194,39 @@ class SevenSegmentReaderTest {
 
         /**
          * A stand-in BP monitor photo: a wall, a dark bezel, an LCD lit unevenly from the top, the
-         * clock, SYS and DIA right-aligned in large digits, a level bar beside SYS, a heart icon and
-         * the pulse in smaller digits.
+         * clock, SYS and DIA right-aligned in large digits, a level bar of three near-square blocks
+         * starting at [barTop], a heart icon and the pulse in smaller digits. [lcdBottom] is the LCD's grey at
+         * its foot, [wall] the wall's at the top and [bezel] the bezel's, and [reflection] adds a
+         * light's reflection across the bezel joining the LCD to the wall. [shadowFrom] darkens
+         * everything below that row, as a shadow with a sharp edge does.
          */
-        fun monitor(sys: Int, dia: Int, pulse: Int): BufferedImage {
+        fun monitor(
+            sys: Int,
+            dia: Int,
+            pulse: Int,
+            barTop: Int = 530,
+            lcdBottom: Int = 118,
+            wall: Int = 200,
+            bezel: Int = 28,
+            reflection: Boolean = false,
+            shadowFrom: Int? = null,
+        ): BufferedImage {
             val image = BufferedImage(1200, 1600, BufferedImage.TYPE_INT_RGB)
             val g = image.createGraphics()
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-            g.paint = GradientPaint(0f, 0f, Color(200, 190, 195), 0f, 1600f, Color(70, 65, 70))
+            g.paint = GradientPaint(0f, 0f, Color(wall, wall - 10, wall - 5), 0f, 1600f, Color(70, 65, 70))
             g.fillRect(0, 0, 1200, 1600)
-            g.color = Color(28, 28, 30)
+            g.color = Color(bezel, bezel, bezel + 2)
             g.fillRoundRect(150, 250, 900, 1250, 120, 120)
-            g.paint = GradientPaint(0f, 420f, Color(212, 214, 208), 0f, 1210f, Color(118, 120, 116))
+            g.paint = GradientPaint(0f, 420f, Color(212, 214, 208), 0f, 1210f, Color(lcdBottom, lcdBottom + 2, lcdBottom - 2))
             g.fillRect(300, 420, 600, 790)
+            if (reflection) {
+                // A streak of light across the bezel's corner, from the wall to the LCD.
+                g.color = Color(240, 240, 238)
+                g.stroke = java.awt.BasicStroke(44f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND)
+                g.drawLine(120, 300, 320, 450)
+                g.stroke = java.awt.BasicStroke(1f)
+            }
             g.color = Color(52, 56, 60)
             number(g, 12, right = 520, top = 440, height = 40)
             g.fillRect(535, 450, 6, 6)
@@ -154,9 +235,66 @@ class SevenSegmentReaderTest {
             number(g, sys, right = 850, top = 520, height = 230)
             number(g, dia, right = 850, top = 790, height = 230)
             number(g, pulse, right = 850, top = 1050, height = 110)
-            for (i in 0 until 3) g.fillRect(866, 530 + i * 75, 22, 55)
+            for (i in 0 until 3) g.fillRect(860, barTop + i * 60, 30, 42)
             g.fillOval(560, 1080, 50, 45)
             g.fillRect(330, 1140, 40, 18)
+            if (shadowFrom != null) {
+                g.color = Color(0, 0, 0, 140)
+                g.fillRect(0, shadowFrom, 1200, 1600 - shadowFrom)
+            }
+            g.dispose()
+            return image
+        }
+
+        /**
+         * A stand-in fingertip oximeter photo: a white body on a desk, a black face, and a screen
+         * that makes its own light, framed by a thin outline: labels, SpO₂ and pulse in a bold
+         * [typeface], the perfusion index in small print between them, a pulse wave and a heart.
+         */
+        fun oximeter(spo2: Int, pulse: Int, typeface: String): BufferedImage {
+            val image = BufferedImage(1400, 1000, BufferedImage.TYPE_INT_RGB)
+            val g = image.createGraphics()
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+            fun font(size: Float) = java.awt.Font(typeface, java.awt.Font.BOLD, 10).deriveFont(size)
+            // Laid out left to right from the typeface's own widths: SpO₂, the perfusion index, the pulse.
+            val left = 330
+            val spo2Width = g.getFontMetrics(font(170f)).stringWidth(spo2.toString())
+            val indexLeft = left + spo2Width + 20
+            val pulseLeft = indexLeft + g.getFontMetrics(font(28f)).stringWidth("PI%") + 30
+            val right = pulseLeft + g.getFontMetrics(font(125f)).stringWidth(pulse.toString()) + 30
+            g.paint = GradientPaint(0f, 0f, Color(90, 80, 100), 0f, 1000f, Color(40, 36, 44))
+            g.fillRect(0, 0, 1400, 1000)
+            g.color = Color(226, 226, 222)
+            g.fillRoundRect(100, 220, right + 70, 560, 260, 260)
+            g.color = Color(16, 16, 18)
+            g.fillRoundRect(240, 280, right - 110, 440, 200, 200)
+            g.color = Color(110, 110, 112)
+            g.stroke = java.awt.BasicStroke(5f)
+            g.drawRoundRect(left - 25, 330, right - left + 25, 340, 30, 30)
+            g.drawOval(right + 40, 440, 60, 110)
+            val yellow = Color(232, 220, 30)
+            val cyan = Color(40, 200, 250)
+            fun text(value: String, color: Color, size: Float, x: Int, y: Int) {
+                g.color = color
+                g.font = font(size)
+                g.drawString(value, x, y)
+            }
+            text("%SpO", yellow, 36f, left, 390)
+            text("2", yellow, 22f, left + g.getFontMetrics(font(36f)).stringWidth("%SpO") + 2, 396)
+            text("PRbpm", yellow, 36f, pulseLeft, 390)
+            text(spo2.toString(), cyan, 170f, left, 570)
+            text("PI%", cyan, 28f, indexLeft, 480)
+            text("4.7", cyan, 28f, indexLeft, 525)
+            text(pulse.toString(), cyan, 125f, pulseLeft, 560)
+            g.color = yellow
+            g.stroke = java.awt.BasicStroke(8f)
+            val wave = Polygon()
+            for (x in left..right - 90 step 10) wave.addPoint(x, 635 - (25 * Math.abs(Math.sin(x / 40.0))).toInt())
+            g.drawPolyline(wave.xpoints, wave.ypoints, wave.npoints)
+            g.color = Color(230, 50, 40)
+            g.fillOval(right - 70, 605, 26, 26)
+            g.fillOval(right - 48, 605, 26, 26)
             g.dispose()
             return image
         }

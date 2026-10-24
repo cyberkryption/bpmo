@@ -28,7 +28,7 @@ It's built in Kotlin with Jetpack Compose and Material 3: rounded cards, a sage-
 
 ### Adding a reading
 
-**Scan** opens the camera, which always uses a dark screen. Choose BP monitor or Oximeter and fit the display inside the frame; only what's inside it is read. The values show up once several frames in a row read the same, and auto-capture takes the photo when they've held for about a second. If the photo itself reads less clearly than the live view did, Review starts from the live values.
+**Scan** opens the camera, which always uses a dark screen. Choose BP monitor or Oximeter and fit the display inside the frame; only what's inside it is read. Each value shows up once several recent frames read it the same, with a dash for any not yet read, so you can see which one a reflection is hiding and tilt the phone. Auto-capture takes the photo when every value has held for about a second. Review starts from whichever read more, the photo or the live view, and fills in any value the photo missed from the live view.
 
 **Import** opens the Android Photo Picker for one or more past photos. They appear in a grid with the time each was taken, read from the photo's EXIF data. A photo with no date is flagged, and you set its date during review.
 
@@ -38,11 +38,13 @@ It's built in Kotlin with Jetpack Compose and Material 3: rounded cards, a sage-
 
 1. Find the display: the biggest bright, solid patch in the photo.
 2. Straighten it, correcting for a phone held at an angle, and enlarge it to a fixed size.
-3. Even out the lighting, then separate the dark segments from the background.
+3. Even out the lighting, then separate the dark segments from the background. A shadow's edge across the display stays sharp, so the shadowed side isn't judged against the lit side.
 4. Split the display into rows of digits, ignoring icons, the clock and level bars.
 5. Read each digit from which of its seven segments are dark, and how clearly.
 
-The numbers then go to SYS, DIA and pulse, or SpO₂ and pulse, top to bottom, and a digit whose segments weren't clear gets the "check" note. If that misses a value or is unsure of one, ML Kit text recognition reads the photo too, and the fuller result is used.
+Most fingertip oximeters have a screen that lights its own digits on black, often in an ordinary typeface rather than segments. When a photo gives fewer than two values, Vitals reads it again inverted, so the screen reads like a normal display, and reads each solid digit from its shape: its holes and the sides it's open on, which every typeface shares. A 6 has a hole low down and is open at the top right; a 2 is open at the top left and the bottom right, above a flat foot. Labels, small print and the pulse wave read as no digit, and a decimal point keeps the perfusion index apart.
+
+The numbers then go to SYS, DIA and pulse, top to bottom, or to SpO₂ and the pulse beside it. SYS and DIA share a digit size, so if only one of them was read it's left for you to fill in rather than guessed. A digit that wasn't clear gets the "check" note. If that misses a value or is unsure of one, ML Kit text recognition reads the photo too, and the fuller result is used.
 
 <table>
   <tr>
@@ -129,7 +131,7 @@ You need JDK 17 or newer and the Android SDK (platform 35).
 ./gradlew :app:testDebugUnitTest -Pscreenshots   # re-renders docs/screenshots with Robolectric
 ```
 
-The display reader is tested against drawn monitor displays, including tilted, small, dim, blurred and heavily compressed versions. To check it against real photos without adding them to the repository, put them in a folder, upright, named after what they show: `bp-154-100-76.jpg` for SYS, DIA and pulse, or `ox-97-68.jpg` for SpO₂ and pulse (anything after the values is ignored). Photos in `core/src/test/resources/displays/` are checked on every build.
+The display reader is tested against drawn monitor displays, including tilted, small, dim, shadowed, blurred and heavily compressed versions, and drawn oximeter screens in serif, sans-serif and monospaced typefaces. To check it against real photos without adding them to the repository, put them in a folder, upright, named after what they show: `bp-154-100-76.jpg` for SYS, DIA and pulse, or `ox-97-68.jpg` for SpO₂ and pulse (anything after the values is ignored). Photos in `core/src/test/resources/displays/` are checked on every build.
 
 On every push, GitHub Actions (`.github/workflows/android.yml`) runs the tests, builds the APKs and runs lint. Each run's `vitals-debug` artifact has the debug APK, and `vitals-release` has the release APK once signing is set up. On `claude/**` branches, the Screenshots workflow re-renders the screenshots and commits any that changed, along with the exported database schema in `app/schemas`.
 
@@ -144,7 +146,7 @@ Each CI build's version code is its run number, so a newer build always installs
 
 ### Layout
 
-- `core/`: plain Kotlin with no Android dependencies, holding the AHA and NICE category rules, validation, averages, trend periods, the seven-segment display reader and parser, EXIF date parsing, Review form state and CSV export. It's unit-tested on the JVM.
+- `core/`: plain Kotlin with no Android dependencies, holding the AHA and NICE category rules, validation, averages, trend periods, the display reader and parser, EXIF date parsing, Review form state and CSV export. It's unit-tested on the JVM.
 - `app/`: the Android app.
   - `data/`: Room and DataStore.
   - `extraction/`: reading photos and live camera frames (with ML Kit as the fallback), and EXIF.

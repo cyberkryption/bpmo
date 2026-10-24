@@ -53,6 +53,16 @@ class DisplayParserTest {
     }
 
     @Test
+    fun aMissedRowLeavesSystolicAndDiastolicEmpty() {
+        // Glare hid the systolic: the diastolic alone mustn't be taken for it.
+        val boxes = listOf(word("99", 100f, 120f, 100f), word("76", 160f, 240f, 45f))
+        val d = DisplayParser.parse(boxes, ReadingType.BP).detections
+        assertNull(d[Field.SYSTOLIC])
+        assertNull(d[Field.DIASTOLIC])
+        assertEquals(76, d[Field.PULSE]?.value)
+    }
+
+    @Test
     fun missingPulseIsLeftEmpty() {
         val boxes = listOf(word("118", 0f, 0f, 100f), word("76", 0f, 120f, 100f))
         val d = DisplayParser.parse(boxes, ReadingType.BP).detections
@@ -78,6 +88,15 @@ class DisplayParserTest {
     @Test
     fun oximeterBySize() {
         val boxes = listOf(word("97", 0f, 0f, 100f), word("72", 0f, 120f, 70f))
+        val d = DisplayParser.parse(boxes, ReadingType.OXIMETER).detections
+        assertEquals(97, d[Field.SPO2]?.value)
+        assertEquals(72, d[Field.PULSE]?.value)
+    }
+
+    @Test
+    fun oximeterPulseIsTheNumberBesideSpo2() {
+        // Something bigger further away, like a misread cable, isn't on the screen.
+        val boxes = listOf(word("97", 0f, 0f, 100f), word("72", 200f, 20f, 70f), word("55", 0f, 800f, 120f, confidence = 0.7f))
         val d = DisplayParser.parse(boxes, ReadingType.OXIMETER).detections
         assertEquals(97, d[Field.SPO2]?.value)
         assertEquals(72, d[Field.PULSE]?.value)
@@ -141,6 +160,9 @@ class DisplayParserTest {
         assertEquals(full, DisplayParser.better(full, partial, null))
         assertTrue(DisplayParser.isComplete(full, ReadingType.BP))
         assertEquals(1 / 3f, DisplayParser.completeness(partial, ReadingType.BP))
+        // Text with no values still beats nothing at all.
+        val labels = listOf(word("SYS", 0f, 0f, 20f), word("mmHg", 0f, 40f, 20f))
+        assertEquals(labels, DisplayParser.better(emptyList(), labels, ReadingType.BP))
     }
 
     @Test

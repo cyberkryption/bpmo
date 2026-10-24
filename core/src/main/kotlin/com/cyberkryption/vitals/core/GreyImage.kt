@@ -37,6 +37,9 @@ class GreyImage(val width: Int, val height: Int, val pixels: ByteArray) {
         return scaled(max(1, (width * scale).roundToInt()), max(1, (height * scale).roundToInt()))
     }
 
+    /** Light for dark: a display lit the other way reads like a normal one. */
+    fun inverted(): GreyImage = GreyImage(width, height, ByteArray(pixels.size) { (pixels[it].toInt() xor 0xFF).toByte() })
+
     /** Bilinear sample at a fractional pixel centre, clamped to the edges. */
     internal fun sample(x: Float, y: Float): Float {
         val fx = (x - 0.5f).coerceIn(0f, width - 1f)

@@ -29,7 +29,7 @@ import java.time.Instant
 
 data class CaptureUiState(
     val mode: ReadingType = ReadingType.BP,
-    /** Values that recent preview frames agree on, once the display is found. */
+    /** Values that recent preview frames agree on, once the display is found: some or all of them. */
     val detected: ParsedDisplay? = null,
     val autoCapture: Boolean = true,
     val torch: Boolean = false,
@@ -52,13 +52,13 @@ class CaptureViewModel(
     val autoCaptureRequests: Flow<Unit> = autoShots.receiveAsFlow()
 
     private val votes = FrameVotes()
-    private var agreed: Map<Field, Int>? = null
+    private var agreed: Map<Field, Int> = emptyMap()
     private var stableSince = 0L
 
     fun setMode(mode: ReadingType) {
         _state.value = _state.value.copy(mode = mode, detected = null)
         votes.clear()
-        agreed = null
+        agreed = emptyMap()
     }
 
     fun toggleAuto() {
@@ -70,26 +70,29 @@ class CaptureViewModel(
     }
 
     /**
-     * Called for each analysed preview frame. Values show, and auto-capture can fire, only once
-     * several recent frames read the same; then they must hold for [STABLE_MS].
+     * Called for each analysed preview frame. A value shows once several recent frames read it the
+     * same, each value on its own; auto-capture fires once all of them have and they've held for
+     * [STABLE_MS].
      */
     fun onFrame(boxes: List<TextBox>) {
         val s = _state.value
         if (s.capturing) return
         val parsed = DisplayParser.parse(boxes, s.mode)
-        val complete = parsed.detections.keys.containsAll(s.mode.fields)
-        val values = parsed.detections.mapValues { it.value.value }.takeIf { complete }
-        val nowAgreed = votes.add(values)
+        val nowAgreed = votes.add(parsed.detections.mapValues { it.value.value })
         if (nowAgreed != agreed) {
             agreed = nowAgreed
             stableSince = now()
         }
-        when {
-            nowAgreed == null -> _state.value = s.copy(detected = null)
-            // Keeps the frame's confidences, but drops its boxes: they're in preview coordinates.
-            values == nowAgreed -> _state.value = s.copy(detected = parsed.withoutBounds())
-        }
-        if (nowAgreed != null && s.autoCapture && now() - stableSince >= STABLE_MS) autoShots.trySend(Unit)
+        // Each value keeps the confidence of the latest frame that read it, but not its box: that's
+        // in preview coordinates.
+        val shown = s.detected?.detections.orEmpty()
+        val detections = nowAgreed.mapNotNull { (field, value) ->
+            val latest = parsed.detections[field]?.takeIf { it.value == value }?.copy(bounds = null)
+            (latest ?: shown[field]?.takeIf { it.value == value })?.let { field to it }
+        }.toMap()
+        _state.value = s.copy(detected = ParsedDisplay(s.mode, detections).takeIf { detections.isNotEmpty() })
+        val complete = nowAgreed.keys.containsAll(s.mode.fields)
+        if (complete && s.autoCapture && now() - stableSince >= STABLE_MS) autoShots.trySend(Unit)
     }
 
     fun newPhotoFile(): File {
@@ -100,7 +103,7 @@ class CaptureViewModel(
     fun onCaptureFailed(file: File) {
         file.delete()
         votes.clear()
-        agreed = null
+        agreed = emptyMap()
         _state.value = _state.value.copy(capturing = false, failed = true, detected = null)
     }
 
@@ -125,5 +128,3 @@ class CaptureViewModel(
         }
     }
 }
-
-private fun ParsedDisplay.withoutBounds() = copy(detections = detections.mapValues { it.value.copy(bounds = null) })
