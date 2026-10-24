@@ -173,8 +173,6 @@ class SevenSegmentReaderTest {
     }
 
     private companion object {
-
-
         val READINGS = listOf(
             Triple(154, 100, 76), Triple(128, 83, 69), Triple(97, 58, 112),
             Triple(203, 119, 45), Triple(111, 71, 60), Triple(136, 92, 88),
