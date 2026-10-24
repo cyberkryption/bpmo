@@ -174,6 +174,7 @@ class SevenSegmentReaderTest {
 
     private companion object {
 
+
         val READINGS = listOf(
             Triple(154, 100, 76), Triple(128, 83, 69), Triple(97, 58, 112),
             Triple(203, 119, 45), Triple(111, 71, 60), Triple(136, 92, 88),
@@ -267,9 +268,9 @@ class SevenSegmentReaderTest {
             g.paint = GradientPaint(0f, 0f, Color(90, 80, 100), 0f, 1000f, Color(40, 36, 44))
             g.fillRect(0, 0, 1400, 1000)
             g.color = Color(226, 226, 222)
-            g.fillRoundRect(100, 220, right + 260, 560, 260, 260)
+            g.fillRoundRect(100, 220, right + 70, 560, 260, 260)
             g.color = Color(16, 16, 18)
-            g.fillRoundRect(240, 280, right + 120, 440, 200, 200)
+            g.fillRoundRect(240, 280, right - 110, 440, 200, 200)
             g.color = Color(110, 110, 112)
             g.stroke = java.awt.BasicStroke(5f)
             g.drawRoundRect(left - 25, 330, right - left + 25, 340, 30, 30)
