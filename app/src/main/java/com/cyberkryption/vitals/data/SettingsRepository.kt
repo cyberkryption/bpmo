@@ -31,6 +31,15 @@ enum class ThemeMode {
     }
 }
 
+/** How the blood pressure chart in Trends, and in the PDF report, shows each day. */
+enum class BpChart {
+    /** A bar from diastolic up to systolic, coloured by category. */
+    BARS,
+
+    /** A line for systolic and another for diastolic. */
+    LINES,
+}
+
 data class AppSettings(
     val requireBiometric: Boolean = false,
     val relockTimeout: RelockTimeout = RelockTimeout.ONE_MINUTE,
@@ -39,6 +48,7 @@ data class AppSettings(
     /** The lock is offered once, after the first saved reading. */
     val lockOffered: Boolean = false,
     val guideline: Guideline = defaultGuideline(),
+    val bpChart: BpChart = BpChart.BARS,
 )
 
 /** Until one is chosen, NICE on a phone set to the UK and AHA elsewhere. */
@@ -58,6 +68,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
                 themeMode = prefs[THEME_MODE]?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } } ?: ThemeMode.SYSTEM,
                 lockOffered = prefs[LOCK_OFFERED] ?: false,
                 guideline = prefs[GUIDELINE]?.let { name -> Guideline.entries.firstOrNull { it.name == name } } ?: defaultGuideline(),
+                bpChart = prefs[BP_CHART]?.let { name -> BpChart.entries.firstOrNull { it.name == name } } ?: BpChart.BARS,
             )
         }
 
@@ -81,6 +92,10 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[GUIDELINE] = guideline.name }
     }
 
+    suspend fun setBpChart(chart: BpChart) {
+        dataStore.edit { it[BP_CHART] = chart.name }
+    }
+
     suspend fun markLockOffered() {
         dataStore.edit { it[LOCK_OFFERED] = true }
     }
@@ -92,5 +107,6 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val LOCK_OFFERED = booleanPreferencesKey("lock_offered")
         val GUIDELINE = stringPreferencesKey("bp_guideline")
+        val BP_CHART = stringPreferencesKey("bp_chart")
     }
 }

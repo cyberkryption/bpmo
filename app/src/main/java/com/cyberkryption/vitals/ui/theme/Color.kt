@@ -48,6 +48,10 @@ data class VitalsColors(
     /** Separators inside cards and tables. */
     val divider: Color get() = text.copy(alpha = if (isDark) 0.12f else 0.09f)
 
+    /** The blood pressure chart's systolic and diastolic lines. */
+    val systolic: Color get() = primary
+    val diastolic: Color get() = rest
+
     fun text(alpha: Float): Color = text.copy(alpha = alpha)
 
     /** Category colour, or neutral when category colours are turned off in Settings. */

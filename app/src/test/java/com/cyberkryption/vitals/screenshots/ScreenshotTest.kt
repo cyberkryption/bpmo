@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.test.core.app.ApplicationProvider
 import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.Period
+import com.cyberkryption.vitals.data.BpChart
 import com.cyberkryption.vitals.data.RelockTimeout
 import com.cyberkryption.vitals.export.HealthReport
 import com.cyberkryption.vitals.review.ReviewItem
@@ -99,21 +100,30 @@ class ScreenshotTest {
     @Test
     fun lockDark() = lock(dark = true)
 
-    /** Every page of a month's PDF report, drawn as the PDF draws it, at twice its size in points. */
+    /**
+     * Every page of a month's PDF report, drawn as the PDF draws it, at twice its size in points,
+     * and the pages that change when the blood pressure chart is drawn as lines.
+     */
     @Test
     fun report() {
         val clock = app.container.clock
         val today = LocalDate.now(clock)
         val period = Period(today.minusDays(29), today)
         val readings = runBlocking { app.container.readings.between(period.startInstant(clock.zone), period.endInstant(clock.zone)) }
-        HealthReport(app, clock.zone).pages(period, readings, Guideline.AHA, today).forEachIndexed { i, page ->
-            val bitmap = Bitmap.createBitmap(595 * 2, 842 * 2, Bitmap.Config.ARGB_8888)
-            Canvas(bitmap).apply {
-                scale(2f, 2f)
-                page(this)
+        fun render(chart: BpChart) = HealthReport(app, clock.zone).pages(period, readings, Guideline.AHA, chart, today).map { page ->
+            Bitmap.createBitmap(595 * 2, 842 * 2, Bitmap.Config.ARGB_8888).also {
+                Canvas(it).apply {
+                    scale(2f, 2f)
+                    page(this)
+                }
             }
-            bitmap.captureRoboImage(File(outDir, "report-${i + 1}.png").path, RoborazziOptions(taskType = RoborazziTaskType.Record))
         }
+        val bars = render(BpChart.BARS)
+        val lines = render(BpChart.LINES)
+        fun save(bitmap: Bitmap, name: String) =
+            bitmap.captureRoboImage(File(outDir, "$name.png").path, RoborazziOptions(taskType = RoborazziTaskType.Record))
+        bars.forEachIndexed { i, page -> save(page, "report-${i + 1}") }
+        lines.forEachIndexed { i, page -> if (bars.getOrNull(i)?.sameAs(page) != true) save(page, "report-lines-${i + 1}") }
     }
 
     @Test
@@ -138,6 +148,14 @@ class ScreenshotTest {
         go { nav.navigate(TrendsRoute) }
         waitFor(hasText("Summary"))
         shoot("$mode-trends")
+        if (!dark) {
+            compose.onNode(hasText("Lines") and hasClickAction()).performClick()
+            compose.waitUntil(timeoutMillis = 15_000) { compose.onAllNodes(hasText("Bar =", substring = true)).fetchSemanticsNodes().isEmpty() }
+            compose.waitForIdle()
+            shoot("light-trends-lines")
+            compose.onNode(hasText("Bars") and hasClickAction()).performClick()
+            compose.waitForIdle()
+        }
 
         go { nav.navigate(ReadingRoute(featured)) }
         waitFor(hasText("Date source"))

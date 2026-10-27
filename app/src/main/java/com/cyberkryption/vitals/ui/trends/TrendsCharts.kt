@@ -10,6 +10,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -18,9 +19,11 @@ import com.cyberkryption.vitals.core.DayPoint
 import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.Span
 import com.cyberkryption.vitals.core.Tone
+import com.cyberkryption.vitals.data.BpChart
 import com.cyberkryption.vitals.ui.components.Scale
 import com.cyberkryption.vitals.ui.components.areaUnder
 import com.cyberkryption.vitals.ui.components.dashedLine
+import com.cyberkryption.vitals.ui.components.dots
 import com.cyberkryption.vitals.ui.components.polyline
 import com.cyberkryption.vitals.ui.theme.Vitals
 import com.cyberkryption.vitals.ui.theme.VitalsType
@@ -63,9 +66,20 @@ private fun xLabels(days: List<DayPoint>, span: Span, locale: Locale): List<Pair
     }
 }
 
-/** Floating rounded bars from diastolic up to systolic, one per day, coloured by category. */
+/**
+ * One slot per day: as [BpChart.BARS], a floating rounded bar from diastolic up to systolic,
+ * coloured by category; as [BpChart.LINES], a line through each day's systolic and another
+ * through its diastolic.
+ */
 @Composable
-fun BloodPressureChart(days: List<DayPoint>, span: Span, locale: Locale, guideline: Guideline, modifier: Modifier = Modifier) {
+fun BloodPressureChart(
+    days: List<DayPoint>,
+    span: Span,
+    locale: Locale,
+    guideline: Guideline,
+    chart: BpChart,
+    modifier: Modifier = Modifier,
+) {
     val c = Vitals.colors
     val measurer = rememberTextMeasurer()
     val scale = bpScale(days)
@@ -101,23 +115,33 @@ fun BloodPressureChart(days: List<DayPoint>, span: Span, locale: Locale, guideli
                 dashedLine(threshold, scale.y(guideline.stage1Diastolic.toFloat(), plotHeight), strokeWidth = 1.5.dp.toPx())
             }
 
-            val inset = 2.dp.toPx()
+            val margin = 2.dp.toPx()
             val n = days.size.coerceAtLeast(1)
-            val slot = (plotWidth - 2 * inset) / n
+            val slot = (plotWidth - 2 * margin) / n
             // Thin pills with air between them; a month's bars are only slightly narrower than their slots.
             val barWidth = (if (span == Span.WEEK) minOf(slot * 0.5f, MAX_BAR.toPx()) else slot - 3.dp.toPx()).coerceAtLeast(1f)
-            val slotCenter = { i: Int -> inset + (i + 0.5f) * slot }
-            days.forEachIndexed { i, day ->
-                val sys = day.systolic ?: return@forEachIndexed
-                val dia = day.diastolic ?: return@forEachIndexed
-                val top = scale.y(sys.toFloat(), plotHeight)
-                val height = (scale.y(dia.toFloat(), plotHeight) - top).coerceAtLeast(2.dp.toPx())
-                drawRoundRect(
-                    color = c.tone(day.status(guideline)!!.tone).base,
-                    topLeft = Offset(slotCenter(i) - barWidth / 2, top),
-                    size = Size(barWidth, height),
-                    cornerRadius = CornerRadius(minOf(barWidth, height) / 2),
-                )
+            val slotCenter = { i: Int -> margin + (i + 0.5f) * slot }
+            when (chart) {
+                BpChart.BARS -> days.forEachIndexed { i, day ->
+                    val sys = day.systolic ?: return@forEachIndexed
+                    val dia = day.diastolic ?: return@forEachIndexed
+                    val top = scale.y(sys.toFloat(), plotHeight)
+                    val height = (scale.y(dia.toFloat(), plotHeight) - top).coerceAtLeast(2.dp.toPx())
+                    drawRoundRect(
+                        color = c.tone(day.status(guideline)!!.tone).base,
+                        topLeft = Offset(slotCenter(i) - barWidth / 2, top),
+                        size = Size(barWidth, height),
+                        cornerRadius = CornerRadius(minOf(barWidth, height) / 2),
+                    )
+                }
+                // Drawn in the plot alone, so the lines' scale is the plot's height.
+                BpChart.LINES -> inset(left = 0f, top = 0f, right = plotLeft, bottom = size.height - plotHeight) {
+                    val dot = if (span == Span.WEEK) 3.dp else 2.dp
+                    for ((values, color) in listOf(days.map { it.diastolic } to c.diastolic, days.map { it.systolic } to c.systolic)) {
+                        polyline(values, scale, color, 2.dp, xOf = slotCenter)
+                        dots(values, scale, color, ring = c.surface, radius = dot, xOf = slotCenter)
+                    }
+                }
             }
 
             val labelTop = plotHeight + LABEL_GAP.toPx()

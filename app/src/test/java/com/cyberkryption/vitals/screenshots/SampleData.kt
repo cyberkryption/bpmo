@@ -11,6 +11,7 @@ import com.cyberkryption.vitals.AppContainer
 import com.cyberkryption.vitals.core.DateSource
 import com.cyberkryption.vitals.core.Field
 import com.cyberkryption.vitals.core.Guideline
+import com.cyberkryption.vitals.data.BpChart
 import com.cyberkryption.vitals.core.Reading
 import com.cyberkryption.vitals.core.ReadingType
 import java.io.File
@@ -56,6 +57,7 @@ object SampleData {
         container.settings.markLockOffered()
         // The same categories whatever region the machine rendering them is set to.
         container.settings.setGuideline(Guideline.AHA)
+        container.settings.setBpChart(BpChart.BARS)
         photoDir.mkdirs()
 
         val random = Random(7)
