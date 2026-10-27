@@ -15,6 +15,7 @@ import com.cyberkryption.vitals.core.Span
 import com.cyberkryption.vitals.core.Status
 import com.cyberkryption.vitals.core.VitalsSummary
 import com.cyberkryption.vitals.core.categoryCounts
+import com.cyberkryption.vitals.data.BpChart
 import com.cyberkryption.vitals.data.ReadingRepository
 import com.cyberkryption.vitals.data.SettingsRepository
 import com.cyberkryption.vitals.export.Exporter
@@ -47,13 +48,15 @@ data class TrendsUiState(
     /** What the categories, bar colours and threshold lines follow. */
     val guideline: Guideline,
     val categories: List<Pair<Status, Int>>,
+    /** Bars or lines, in the blood pressure chart here and in the PDF report. */
+    val bpChart: BpChart,
 ) {
     val isCurrent: Boolean get() = periodsBack == 0
 }
 
 class TrendsViewModel(
     private val readings: ReadingRepository,
-    settings: SettingsRepository,
+    private val settings: SettingsRepository,
     private val exporter: Exporter,
     private val appLock: AppLock,
     private val clock: Clock,
@@ -64,15 +67,15 @@ class TrendsViewModel(
     /** Share-sheet intents, ready to start. */
     val shareRequests: Flow<Intent> = shares.receiveAsFlow()
 
-    private val guideline = settings.settings.map { it.guideline }.distinctUntilChanged()
+    private val choices = settings.settings.map { it.guideline to it.bpChart }.distinctUntilChanged()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<TrendsUiState?> = selection.flatMapLatest { (span, back) ->
         val period = Period.of(span, back, LocalDate.now(clock))
-        readings.observeBetween(period.startInstant(clock.zone), period.endInstant(clock.zone)).combine(guideline) { list, chosen ->
+        readings.observeBetween(period.startInstant(clock.zone), period.endInstant(clock.zone)).combine(choices) { list, (guideline, chart) ->
             TrendsUiState(
-                span, back, period, Daily.points(list, period, clock.zone), VitalsSummary.of(list), chosen,
-                categoryCounts(list, chosen),
+                span, back, period, Daily.points(list, period, clock.zone), VitalsSummary.of(list), guideline,
+                categoryCounts(list, guideline), chart,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -89,10 +92,14 @@ class TrendsViewModel(
         selection.update { (span, back) -> span to (back - 1).coerceAtLeast(0) }
     }
 
+    fun setBpChart(chart: BpChart) {
+        viewModelScope.launch { settings.setBpChart(chart) }
+    }
+
     fun exportCsv() = share("text/csv") { exporter.csv(it.guideline) }
 
-    /** A PDF report of the readings from [period]'s first day to its last. */
-    fun exportReport(period: Period) = share("application/pdf") { exporter.report(period, it.guideline) }
+    /** A PDF report of the readings from [period]'s first day to its last, its blood pressure chart drawn as here. */
+    fun exportReport(period: Period) = share("application/pdf") { exporter.report(period, it.guideline, it.bpChart) }
 
     private fun share(mimeType: String, write: suspend (TrendsUiState) -> Uri) {
         val s = state.value ?: return

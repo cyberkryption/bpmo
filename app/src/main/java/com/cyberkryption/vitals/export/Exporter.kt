@@ -8,6 +8,7 @@ import com.cyberkryption.vitals.R
 import com.cyberkryption.vitals.core.Csv
 import com.cyberkryption.vitals.core.Guideline
 import com.cyberkryption.vitals.core.Period
+import com.cyberkryption.vitals.data.BpChart
 import com.cyberkryption.vitals.data.ReadingRepository
 import com.cyberkryption.vitals.ui.components.shortLabel
 import kotlinx.coroutines.Dispatchers
@@ -29,12 +30,15 @@ class Exporter(private val context: Context, private val readings: ReadingReposi
         uriFor(file)
     }
 
-    /** PDF report of the readings from [period]'s first day to its last, with categories under [guideline]. */
-    suspend fun report(period: Period, guideline: Guideline): Uri = withContext(Dispatchers.IO) {
+    /**
+     * PDF report of the readings from [period]'s first day to its last, with categories under
+     * [guideline] and the blood pressure chart drawn as [chart].
+     */
+    suspend fun report(period: Period, guideline: Guideline, chart: BpChart): Uri = withContext(Dispatchers.IO) {
         val zone = ZoneId.systemDefault()
         val inPeriod = readings.between(period.startInstant(zone), period.endInstant(zone))
         val file = File(dir, "vitals-report-${period.start}-to-${period.end}.pdf")
-        HealthReport(context, zone).write(file, period, inPeriod, guideline, LocalDate.now(zone))
+        HealthReport(context, zone).write(file, period, inPeriod, guideline, chart, LocalDate.now(zone))
         uriFor(file)
     }
 

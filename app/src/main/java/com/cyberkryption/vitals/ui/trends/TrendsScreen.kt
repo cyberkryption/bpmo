@@ -52,6 +52,7 @@ import com.cyberkryption.vitals.core.Span
 import com.cyberkryption.vitals.core.Status
 import com.cyberkryption.vitals.core.Summary
 import com.cyberkryption.vitals.core.Tone
+import com.cyberkryption.vitals.data.BpChart
 import com.cyberkryption.vitals.ui.components.AdaptiveTiles
 import com.cyberkryption.vitals.ui.components.IconAction
 import com.cyberkryption.vitals.ui.components.OutlinedIconAction
@@ -143,8 +144,20 @@ fun TrendsScreen(
                     )
                     Text(stringResource(R.string.unit_avg_mmhg), style = VitalsType.meta, color = c.muted, modifier = Modifier.alignByBaseline())
                 }
-                BloodPressureChart(s.days, s.span, locale, s.guideline)
-                ChartLegend(s.guideline)
+                BloodPressureChart(s.days, s.span, locale, s.guideline, s.bpChart)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ChartLegend(s.guideline, s.bpChart, Modifier.weight(1f))
+                    // Remembered, and used for the PDF report's chart too.
+                    Segmented(
+                        options = listOf(
+                            BpChart.BARS to stringResource(R.string.trends_chart_bars),
+                            BpChart.LINES to stringResource(R.string.trends_chart_lines),
+                        ),
+                        selected = s.bpChart,
+                        onSelect = viewModel::setBpChart,
+                        height = 40.dp,
+                    )
+                }
             }
 
             AdaptiveTiles(
@@ -219,11 +232,17 @@ private fun ExportMenu(onCsv: () -> Unit, onReport: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ChartLegend(guideline: Guideline) {
+private fun ChartLegend(guideline: Guideline, chart: BpChart, modifier: Modifier = Modifier) {
     val c = Vitals.colors
     val threshold = c.tone(Tone.STAGE1).base
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(R.string.trends_bar_legend), style = VitalsType.caption, color = c.muted)
+    FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        when (chart) {
+            BpChart.BARS -> Text(stringResource(R.string.trends_bar_legend), style = VitalsType.caption, color = c.muted)
+            BpChart.LINES -> {
+                LineKey(stringResource(R.string.summary_systolic), c.systolic)
+                LineKey(stringResource(R.string.summary_diastolic), c.diastolic)
+            }
+        }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Box(
                 Modifier
@@ -245,6 +264,15 @@ private fun ChartLegend(guideline: Guideline) {
                 color = c.muted,
             )
         }
+    }
+}
+
+/** A short stroke of a line's colour, and what the line shows. */
+@Composable
+private fun LineKey(label: String, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.size(width = 14.dp, height = 3.dp).clip(VitalsShape.pill).background(color))
+        Text(label, style = VitalsType.caption, color = Vitals.colors.muted)
     }
 }
 

@@ -28,6 +28,7 @@ import com.cyberkryption.vitals.core.Summary
 import com.cyberkryption.vitals.core.Tone
 import com.cyberkryption.vitals.core.VitalsSummary
 import com.cyberkryption.vitals.core.categoryCounts
+import com.cyberkryption.vitals.data.BpChart
 import com.cyberkryption.vitals.ui.components.Scale
 import com.cyberkryption.vitals.ui.components.shortLabel
 import com.cyberkryption.vitals.ui.components.source
@@ -66,6 +67,8 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
     private val headerFill = palette.primaryContainer.toArgb()
     private val pulseColor = palette.primary.toArgb()
     private val spo2Color = palette.rest.toArgb()
+    private val systolicColor = palette.systolic.toArgb()
+    private val diastolicColor = palette.diastolic.toArgb()
     private fun tone(tone: Tone) = palette.tone(tone).base.toArgb()
 
     private fun text(typeface: Typeface, size: Float, color: Int = ink, numbers: Boolean = false) =
@@ -97,9 +100,9 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
 
-    fun write(file: File, period: Period, readings: List<Reading>, guideline: Guideline, created: LocalDate) {
+    fun write(file: File, period: Period, readings: List<Reading>, guideline: Guideline, chart: BpChart, created: LocalDate) {
         val doc = PdfDocument()
-        pages(period, readings, guideline, created).forEachIndexed { i, draw ->
+        pages(period, readings, guideline, chart, created).forEachIndexed { i, draw ->
             val page = doc.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, i + 1).create())
             draw(page.canvas)
             doc.finishPage(page)
@@ -108,7 +111,7 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
         doc.close()
     }
 
-    fun pages(period: Period, readings: List<Reading>, guideline: Guideline, created: LocalDate): List<ReportPage> {
+    fun pages(period: Period, readings: List<Reading>, guideline: Guideline, chart: BpChart, created: LocalDate): List<ReportPage> {
         val sorted = readings.sortedBy { it.takenAt }
         val bp = sorted.filter { it.type == ReadingType.BP && it.systolic != null && it.diastolic != null }
         val spo2 = sorted.filter { it.type == ReadingType.OXIMETER && it.spo2 != null }
@@ -139,7 +142,7 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
             val labels = Daily.axisLabels(points, bucketDays, locale)
             val summary = VitalsSummary.of(bp)
             blocks += subheading(R.string.report_trends)
-            blocks += bpChartBlock(points, labels, summary, guideline, bucketDays)
+            blocks += bpChartBlock(points, labels, summary, guideline, chart, bucketDays)
             blocks += pulseChartBlock(points, labels, summary.pulse, bucketDays)
             blocks += categoriesBlock(categoryCounts(bp, guideline))
             blocks += summaryBlock(
@@ -364,6 +367,7 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
         labels: List<Pair<Int, String>>,
         summary: VitalsSummary,
         guideline: Guideline,
+        chart: BpChart,
         bucketDays: Int,
     ) = card(258f) { c, area ->
         val bp = summary.bloodPressure
@@ -382,25 +386,54 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
         thresholdLine(c, plot, scale, guideline.stage1Diastolic.toFloat())
 
         val slot = plot.width() / points.size.coerceAtLeast(1)
-        val barWidth = if (points.size <= 31) min(slot * 0.55f, 10f) else max(slot - 1f, 0.8f)
-        points.forEachIndexed { i, p ->
-            val sys = p.systolic ?: return@forEachIndexed
-            val dia = p.diastolic ?: return@forEachIndexed
-            val top = plot.top + scale.y(sys.toFloat(), plot.height())
-            val bottom = max(plot.top + scale.y(dia.toFloat(), plot.height()), top + 2f)
-            val cx = plot.left + (i + 0.5f) * slot
-            fill.color = tone(p.status(guideline)!!.tone)
-            val radius = min(barWidth, bottom - top) / 2
-            c.drawRoundRect(RectF(cx - barWidth / 2, top, cx + barWidth / 2, bottom), radius, radius, fill)
+        when (chart) {
+            BpChart.BARS -> {
+                val barWidth = if (points.size <= 31) min(slot * 0.55f, 10f) else max(slot - 1f, 0.8f)
+                points.forEachIndexed { i, p ->
+                    val sys = p.systolic ?: return@forEachIndexed
+                    val dia = p.diastolic ?: return@forEachIndexed
+                    val top = plot.top + scale.y(sys.toFloat(), plot.height())
+                    val bottom = max(plot.top + scale.y(dia.toFloat(), plot.height()), top + 2f)
+                    val cx = plot.left + (i + 0.5f) * slot
+                    fill.color = tone(p.status(guideline)!!.tone)
+                    val radius = min(barWidth, bottom - top) / 2
+                    c.drawRoundRect(RectF(cx - barWidth / 2, top, cx + barWidth / 2, bottom), radius, radius, fill)
+                }
+            }
+            BpChart.LINES -> {
+                for ((values, color) in listOf(points.map { it.diastolic } to diastolicColor, points.map { it.systolic } to systolicColor)) {
+                    val at = seriesPoints(plot, slot, scale, values)
+                    drawStroke(c, at, color)
+                    for ((x, y) in at) {
+                        fill.color = android.graphics.Color.WHITE
+                        c.drawCircle(x, y, 2.75f, fill)
+                        fill.color = color
+                        c.drawCircle(x, y, 1.75f, fill)
+                    }
+                }
+            }
         }
         drawXLabels(c, plot, slot, labels)
 
         // Legend
         val legendY = plot.bottom + 30f
         var x = area.left
-        val barLegend = context.getString(R.string.trends_bar_legend)
-        c.drawText(barLegend, x, legendY, captionPaint)
-        x += captionPaint.measureText(barLegend) + 18f
+        when (chart) {
+            BpChart.BARS -> {
+                val barLegend = context.getString(R.string.trends_bar_legend)
+                c.drawText(barLegend, x, legendY, captionPaint)
+                x += captionPaint.measureText(barLegend) + 18f
+            }
+            BpChart.LINES -> for ((label, color) in listOf(R.string.summary_systolic to systolicColor, R.string.summary_diastolic to diastolicColor)) {
+                line.color = color
+                line.strokeWidth = 2f
+                line.strokeCap = Paint.Cap.ROUND
+                c.drawLine(x, legendY - 3f, x + 14f, legendY - 3f, line)
+                val text = context.getString(label)
+                c.drawText(text, x + 20f, legendY, captionPaint)
+                x += 20f + captionPaint.measureText(text) + 18f
+            }
+        }
         dash(c, x, x + 16f, legendY - 3f, tone(Tone.STAGE1))
         x += 22f
         val thresholdLegend = context.getString(R.string.trends_threshold_legend, guideline.stage1Systolic, guideline.stage1Diastolic)
@@ -536,11 +569,8 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
         threshold?.let { thresholdLine(c, plot, shown, it) }
 
         val slot = plot.width() / values.size.coerceAtLeast(1)
-        val points = values.mapIndexedNotNull { i, v -> v?.let { (plot.left + (i + 0.5f) * slot) to (plot.top + shown.y(it.toFloat(), plot.height())) } }
-        if (points.size == 1) {
-            fill.color = color
-            c.drawCircle(points[0].first, points[0].second, 2.5f, fill)
-        } else if (points.size > 1) {
+        val points = seriesPoints(plot, slot, shown, values)
+        if (points.size > 1) {
             val area = Path().apply {
                 moveTo(points.first().first, plot.bottom)
                 points.forEach { (x, y) -> lineTo(x, y) }
@@ -551,17 +581,32 @@ class HealthReport(private val context: Context, private val zone: ZoneId) {
             fill.alpha = 38
             c.drawPath(area, fill)
             fill.alpha = 255
-            val stroke = Path().apply {
-                moveTo(points.first().first, points.first().second)
-                points.drop(1).forEach { (x, y) -> lineTo(x, y) }
-            }
-            line.color = color
-            line.strokeWidth = 1.5f
-            line.strokeJoin = Paint.Join.ROUND
-            line.strokeCap = Paint.Cap.ROUND
-            c.drawPath(stroke, line)
         }
+        drawStroke(c, points, color)
         drawXLabels(c, plot, slot, labels)
+    }
+
+    /** Where each value sits in [plot], one per [slot]; a missing value leaves its slot empty. */
+    private fun seriesPoints(plot: RectF, slot: Float, scale: Scale, values: List<Int?>): List<Pair<Float, Float>> =
+        values.mapIndexedNotNull { i, v -> v?.let { (plot.left + (i + 0.5f) * slot) to (plot.top + scale.y(it.toFloat(), plot.height())) } }
+
+    /** A line through [points], stepping over empty slots; a single point is a dot. */
+    private fun drawStroke(c: Canvas, points: List<Pair<Float, Float>>, color: Int) {
+        if (points.size == 1) {
+            fill.color = color
+            c.drawCircle(points[0].first, points[0].second, 2.5f, fill)
+            return
+        }
+        if (points.isEmpty()) return
+        val stroke = Path().apply {
+            moveTo(points.first().first, points.first().second)
+            points.drop(1).forEach { (x, y) -> lineTo(x, y) }
+        }
+        line.color = color
+        line.strokeWidth = 1.5f
+        line.strokeJoin = Paint.Join.ROUND
+        line.strokeCap = Paint.Cap.ROUND
+        c.drawPath(stroke, line)
     }
 
     private companion object {

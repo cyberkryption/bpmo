@@ -104,6 +104,8 @@
     <!-- Trends -->
     <string name="trends_title">Trends</string>
     <string name="trends_bar_legend">Bar = diastolic → systolic</string>
+    <string name="trends_chart_bars">Bars</string>
+    <string name="trends_chart_lines">Lines</string>
     <string name="trends_threshold_legend">%1$d / %2$d thresholds</string>
     <string name="trends_resting_range">Resting range %1$d–%2$d bpm</string>
     <string name="trends_spo2_threshold" formatted="false">Dashed = 95% threshold</string>
